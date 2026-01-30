@@ -842,7 +842,7 @@
             // **1. יצירת HTML עבור הטבלה המנותחת**
             let tableHTML = '<h3 style="text-align: center;">טבלת משמרות מנותחת</h3>';
             
-            tableHTML += `<p class="file-format-info" style="text-align: center; color: var(--primary-blue);">**הגדרות:** כל המשמרות: 1 עובד למשמרת. **מינימום שבועי: ${MIN_REQUIRED} משמרות.**</p>`;
+            tableHTML += `<p class="file-format-info" style="text-align: center; color: var(--primary-blue);">**הגדרות:** משמרת יום (06:00-22:00): 1 עובד. משמרת לילה (02:00-06:00, 22:00-02:00): עד 2 עובדים. **מינימום שבועי: ${MIN_REQUIRED} משמרות (לא כולל ליווי).**</p>`;
 
             // יצירת טבלת הנתונים הראשית
             let scheduleTableHTML = '<table id="schedule-table"><thead><tr><th>שעות / יום</th>';
@@ -876,7 +876,7 @@
                 const isNight2to6 = rowIndex === NIGHT_SHIFT_2_6_INDEX;
                 const timeSlotDisplay = timeSlotFull.replace(' (Night)', '').replace(' (Assist)', '');
                 
-                const maxAllowedInShift = 1; 
+                const maxAllowedInShift = isNightShift ? 2 : 1; 
                 
                 const rowClass = isAssistanceShift ? 'red-assistance-shift' : '';
                 
@@ -1333,7 +1333,7 @@
                     const isAssistanceShift = timeSlotFull.includes('(Assist)');
                     const isNightShift = timeSlotFull.includes('(Night)');
                     const isNight2to6 = shiftIndex === NIGHT_SHIFT_2_6_INDEX; 
-                    const required = 1;
+                    const required = isNightShift ? 2 : 1;
                     
                     row.forEach((cellContent, dayIndex) => {
                         const availableNames = cellContent.split(',').filter(name => name.trim().length > 0);
@@ -1471,7 +1471,7 @@
                 function fillShiftLogic(shift, onlyGuardsFor5) {
                     const { dayIndex, shiftIndex, requiredCount } = shift;
                     const isNightShift = EXPECTED_TIME_SLOTS[shiftIndex].includes('(Night)');
-                    const maxInShift = 1;
+                    const maxInShift = isNightShift ? 2 : 1;
                     
                     // אם המשמרת כבר התמלאה בסבב הקודם, דלג
                     if (newScheduleData[shiftIndex][dayIndex].length >= maxInShift) {
