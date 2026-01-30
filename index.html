@@ -160,7 +160,7 @@
 		#results-container {
 			width: 100%;
 			margin-top: 30px;
-			overflow-x: auto; /* מאפשר גלילה רק אם המסך ממש קטן */
+			overflow-x: auto; /* מאפשר גלילה רק אם המסך ממש קטן **/
 			padding: 20px;
 			box-sizing: border-box;
 		}
@@ -208,12 +208,12 @@
 
 		/* --- הדגשת סוף שבוע (שישי ושבת) באפרסק --- */
 		/* עמודה 6 היא שישי, עמודה 7 היא שבת */
-		#schedule-table th:nth-child(6), #schedule-table th:nth-child(7) {
-			background-color: #ff8a65 !important;
+		#schedule-table th:nth-child(7), #schedule-table th:nth-child(8) {
+			background-color: #ff8a65 !important; /* שישי ושבת */
 		}
 
-		#schedule-table td:nth-child(6), #schedule-table td:nth-child(7) {
-			background-color: var(--saturday-bg) !important;
+		#schedule-table td:nth-child(7), #schedule-table td:nth-child(8) {
+			background-color: var(--saturday-bg) !important; /* שישי ושבת */
 		}
 
 		/* אופציונלי: יום ראשון (העמודה האחרונה) בצבע נייטרלי עדין */
@@ -597,7 +597,7 @@
 			<p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
             
             <div class="date-input-container">
-                <label for="startDate">תאריך יום שני (תחילת שבוע):</label>
+                <label for="startDate">תאריך יום ראשון :</label>
                 <input type="date" id="startDate" required>
             </div>
             
@@ -659,7 +659,7 @@
         const MAX_ALLOWED = 5;
         const MAX_NIGHT_2_6 = 2; // מקסימום שמירות בשעות 02:00-06:00
         const MAX_ITERATIONS = 10; // מספר ניסיונות סידור אוטומטי
-        const EXPECTED_DAYS = ['יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת', 'יום ראשון'];
+		const EXPECTED_DAYS = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'];
         
         const EXPECTED_TIME_SLOTS = [
             'ליווי 07:40 (Assist)',      // 0
@@ -703,18 +703,12 @@
 			document.getElementById('dataToAnalyze').value = INITIAL_SCHEDULE_DATA; 
 			
 			const today = new Date();
-			let dayOfWeek = today.getDay(); // 0 = ראשון, 1 = שני...
+			let dayOfWeek = today.getDay(); // 0 = ראשון
 			
-			// חישוב המרחק ליום שני הקרוב/הנוכחי
-			// אם היום יום ראשון, נלך יום אחד קדימה. אם יום אחר, נחזור ליום שני של השבוע הנוכחי.
-			let diffToMonday = (dayOfWeek === 0) ? -1 : dayOfWeek - 1;
-			today.setDate(today.getDate() - diffToMonday);
+			// חישוב המרחק ליום ראשון האחרון/הנוכחי
+			today.setDate(today.getDate() - dayOfWeek);
 			
 			const formattedDate = today.toISOString().split('T')[0];
-			// שינוי הכותרת בתצוגה ליום שני
-			const dateLabel = document.querySelector('label[for="startDate"]');
-			if (dateLabel) dateLabel.textContent = "תאריך יום שני (תחילת שבוע):";
-			
 			document.getElementById('startDate').value = formattedDate;
 
 			const savedUrl = localStorage.getItem('googleSheetUrl');
