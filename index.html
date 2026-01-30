@@ -612,9 +612,9 @@
 				</div>
 
 				<div class="guards-selection-side-panel">
-					<h3>בחירת שומרים ליעד של 5 משמרות 🏆</h3>
+					<h3>בחירת שומרים ליעד של 5-6 משמרות 🏆</h3>
 					<p class="file-format-info" style="font-size: 0.85em; margin-bottom: 10px;">
-						לחץ על השומרים שחייבים להגיע ל-5 משמרות (עדיפות בשיבוץ):
+						לחץ על השומרים שחייבים להגיע ליעד (5-6 משמרות) - עדיפות בשיבוץ:
 					</p>
 					<div id="guardButtonsContainer" class="guard-selector-container" style="box-shadow: none; border: 1px solid #eee; background: #fafafa;">
 						</div>
@@ -652,11 +652,11 @@
         let lastRenderedTableHTML = '';
 
         // ** נתוני משמרות לדוגמא (השארתי את המשתנה הגלובלי ריק כדי שהמשתמש יזין את נתוניו) **
-        const INITIAL_SCHEDULE_DATA = ``; 
+        const INITIAL_SCHEDULE_DATA = ``;
 
         // הגדרות קבועות
-        const MIN_REQUIRED = 4; // *** אילוץ: מינימום 3 משמרות ***
-        const MAX_ALLOWED = 5;
+		const MIN_REQUIRED = 5; // מינימום משמרות שבועיות
+		const MAX_ALLOWED = 6; // מקסימום משמרות שבועיות
         const MAX_NIGHT_2_6 = 2; // מקסימום שמירות בשעות 02:00-06:00
         const MAX_ITERATIONS = 10; // מספר ניסיונות סידור אוטומטי
 		const EXPECTED_DAYS = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'];
@@ -842,7 +842,7 @@
             // **1. יצירת HTML עבור הטבלה המנותחת**
             let tableHTML = '<h3 style="text-align: center;">טבלת משמרות מנותחת</h3>';
             
-            tableHTML += `<p class="file-format-info" style="text-align: center; color: var(--primary-blue);">**הגדרות:** כל המשמרות: 1 עובד למשמרת. **מינימום שבועי: ${MIN_REQUIRED} משמרות.**</p>`;
+            tableHTML += `<p class="file-format-info" style="text-align: center; color: var(--primary-blue);">**הגדרות:** כל המשמרות: 1 עובד למשמרת. **מינימום: ${MIN_REQUIRED} משמרות.**</p>`;
 
             // יצירת טבלת הנתונים הראשית
             let scheduleTableHTML = '<table id="schedule-table"><thead><tr><th>שעות / יום</th>';
@@ -876,8 +876,8 @@
                 const isNight2to6 = rowIndex === NIGHT_SHIFT_2_6_INDEX;
                 const timeSlotDisplay = timeSlotFull.replace(' (Night)', '').replace(' (Assist)', '');
                 
-                const maxAllowedInShift = 1; 
-                
+				const maxAllowedInShift = 1; // כעת כל המשמרות מוגדרות לאדם אחד בלבד                
+
                 const rowClass = isAssistanceShift ? 'red-assistance-shift' : '';
                 
                 scheduleTableHTML += `<tr class="${rowClass}"><td class="time-slot">${timeSlotDisplay}</td>`;
@@ -1103,20 +1103,19 @@
                     `<span class="night-limit-ok">✅ ${night2to6Count}</span>`;
 
 
-				// בדיקת עמידה בתנאי החדש (3 עד 5 משמרות)
-			if (count === 5) {
-					rowClass = 'shifts-5-count'; // כחול
-					statusText = `✅ עמד (5 משמרות - מקסימום)`;
-				} else if (count === 4) {
-					rowClass = 'shifts-4-count'; // ירוק כהה
-					statusText = `✅ עמד (4 משמרות)`;
+				// בדיקת עמידה בתנאי החדש (5 עד 6 משמרות)
+				if (count === MAX_ALLOWED) {
+					rowClass = 'shifts-5-count'; // חזותית: שימוש בכיתה קיימת
+					statusText = `✅ עמד (${MAX_ALLOWED} משמרות - מקסימום)`;
+				} else if (count === (MAX_ALLOWED - 1)) {
+					rowClass = 'shifts-4-count'; // שימוש בכיתה קיימת לטווח שמתחת
+					statusText = `✅ עמד (${MAX_ALLOWED - 1} משמרות)`;
 				} else if (count < MIN_REQUIRED) {
 					rowClass = 'low-shifts'; // אדום
 					statusText = `❌ לא עמד (פחות מ-${MIN_REQUIRED} - ${count})`;
-				} else { 
+				} else if (count > MAX_ALLOWED) { 
 					rowClass = 'not-met-condition';
 					statusText = `❌ איסור! (יותר מדי - ${count})`;
-					
 					exceptions.push({
 						day: "סיכום שבועי",
 						slot: "מכסת משמרות",
@@ -1432,7 +1431,7 @@
 					// הגדרת יעד אישי
 					let personalTarget = guardsFor5Set.has(name) ? 5 : MIN_REQUIRED;
 
-					// 1. עדיפות קריטית למי שטרם הגיע ליעד שלו (ובמיוחד לאלו של 5 משמרות)
+					// 1. עדיפות קריטית למי שטרם הגיע ליעד שלו (ובמיוחד לאלו של 5-6 משמרות)
 					if (count < personalTarget) {
 						// בונוס משמעותי שמבטיח שהם ייבחרו לפני אחרים
 						score += 5000 * (personalTarget - count); 
@@ -1533,7 +1532,7 @@
                     }
                 }
 
-                // הרצת סבב 1: עדיפות מוחלטת לשומרים שחייבים 5 משמרות
+				// הרצת סבב 1: עדיפות מוחלטת לשומרים שחייבים 5-6 משמרות
                 shiftsToFill.forEach(shift => fillShiftLogic(shift, true));
 
                 // הרצת סבב 2: מילוי שאר המשבצות עם שאר העובדים
