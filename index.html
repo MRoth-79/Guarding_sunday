@@ -73,6 +73,12 @@
 			transform: translateY(-2px);
 			box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
 		}
+
+		#guardSearch:hover {
+			border-color: var(--secondary-blue);
+			background-color: #f9fbfb;
+		}
+
 		
 		button:disabled {
 			background-color: #cccccc !important;
@@ -108,9 +114,14 @@
 			transition: all 0.2s ease;
 		}
 
+		.guard-btn:hover { 
+			background-color: #e2ecf1; 
+			border-color: #b0bec5; 
+		}
+
 		.guard-btn.active {
-			background-color: #FFC107 !important;
-			color: #212121 !important;
+			background-color: #FFC107;
+			color: #212121;
 			border-color: #FFA000;
 			font-weight: bold;
 			transform: scale(1.05);
@@ -137,7 +148,7 @@
 			padding: 20px;
 			border-radius: 15px;
 			border: 1px solid #f0f0f0;
-			box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+			box-shadow: 0 4px 15px rgba(0,0,0,0.08);
 			position: sticky;
 			top: 20px;
 		}
@@ -168,15 +179,14 @@
 		#schedule-table {
 			width: 100%;
 			max-width: 1600px;
-			margin: 0 auto !important;
+			margin: 0 auto;
 			border-collapse: separate;
 			border-spacing: 0;
 			background-color: white;
-			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); /* צל רך מודרני */
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 			border-radius: 15px;
-			overflow: hidden;
 			border: 1px solid #eee;
-			table-layout: fixed !important;
+			table-layout: auto;
 		}
 
 		#schedule-table th, #schedule-table td {
@@ -189,18 +199,27 @@
 			/* תוספות למניעת קפיצות */
 			height: 70px;            /* קיבוע גובה אחיד לכל התאים */
 			vertical-align: middle;
-			overflow: visible !important; /* מאפשר לשם לגדול בלי להזיז את התא */
+			overflow: hidden; 
+			text-overflow: ellipsis; 
+			white-space: nowrap;
 		}
 
 		#schedule-table thead {
 			background-color: var(--primary-blue);
 			color: white;
+			letter-spacing: 1px;
+			font-weight: 700;
+		}
+
+		#schedule-table tbody tr:hover {
+			background-color: #f5f9fa;
 		}
 
 		/* עמודת השעות */
 		.time-slot {
 			background-color: var(--secondary-blue);
-			color: #475569 !important;
+			color: white;
+			text-shadow: 0 0 3px rgba(0,0,0,0.3);
 			font-weight: bold;
 			direction: ltr !important; /* תיקון הצגת שעות 02:00-06:00 */
 			border-left: 2px solid #e2e8f0 !important;
@@ -227,17 +246,19 @@
 		   ========================================= */
 		
 		.person {
-			display: block;
+			display: inline-block;
 			width: fit-content;
 			margin: 3px auto;
-			padding: 4px 12px;
+			padding: 6px 14px;
 			border-radius: 50px;
-			font-size: 1.5em;
+			font-size: 1.25em;
 			font-weight: 600;
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			transition: all 0.2s ease;
 			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 			cursor: default;
 			border: 1px solid rgba(0,0,0,0.03);
+			user-select: none; 
+			-webkit-user-select: none;
 		}
 
 		.person:hover {
@@ -246,39 +267,39 @@
 			filter: brightness(1.05);
 		}
 
-		.highlight-name {
-			transform: scale(1.15) !important; /* הגדלה מתונה יותר למניעת עיוות */
-			box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
-			
-			/* שימוש ב-outline מבטיח שהטבלה לא תזוז מילימטר */
-			outline: 3px solid #000 !important;
-			outline-offset: 1px;
-			
-			z-index: 1000 !important;
-			position: relative !important;
-			filter: brightness(1.2) contrast(1.1) !important;
-			transition: transform 0.1s ease;
+		/* 2. כשהזרקור פעיל: המיכל מקבל קלאס, וכל מי שלא נבחר דוהה */
+		.spotlight-active .person:not(.highlight-name) {
+			opacity: 0.4 !important;    /* שקיפות ברורה כדי שהנבחר יבלוט */
+			filter: grayscale(0.5);     /* הפיכה לאפור עדין */
+			transform: scale(0.95);     /* הקטנה קלה למראה עומק */
+			pointer-events: none;       /* מונע מהאצבע "להיתקע" על שמות אחרים */
+			transition: all 0.15s ease;
 		}
 
-		/* מפת צבעים בסיסית לשמות */
-		.color-אמיר { background-color: #BBDEFB !important; color: #0D47A1; }
-		.color-נמרוד { background-color: #e1f5fe; color: #0277bd; }
-		.color-יובי { background-color: #fff8e1; color: #ff8f00; }
-		/* ... שאר צבעי השמות שלך יבואו כאן ... */
-		
+		/* 3. השם הנבחר - בולט ב-100% עם מסגרת עבה */
+		.person.highlight-name {
+			opacity: 1 !important;
+			filter: none !important;
+			transform: scale(1.12);
+			box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+			outline: 3px solid #000;
+			position: relative;
+			z-index: 100; /* מוודא שהוא מעל כולם */
+		}
+
 		/* ** מפת צבעים לכל 22 השומרים ** */
-		.color-אמיר { background-color: #BBDEFB !important; color: #0D47A1; } 
+		.color-אמיר { background-color: #7bb5e4; color: #0D47A1; }
 		.color-נמרוד { background-color: #e1f5fe; color: #0277bd; } 
 		.color-יובי { background-color: #fff8e1; color: #ff8f00; } 
-		.color-טגניה { background-color: #43A047 !important; color: #ffffff !important; }
+		.color-טגניה { background-color: #43A047; color: #ffffff; }
 		.color-ישי { background-color: #f3e5f5; color: #6a1b9a; } 
-		.color-חסון { background-color: #0D47A1 !important; color: #ffffff !important; }
-		.color-לישע { background-color: #C8E6C9; color: #000000; } 
+		.color-חסון { background-color: #0D47A1; color: #ffffff; }
+		.color-לישע { background-color: #4a704c; color: #ffffff; } 
 		.color-עידן { background-color: #eceff1; color: #D81B60; } 
 		.color-חגי { background-color: #fff3e0; color: #e65100; } 
 		.color-סתיו { background-color: #FFFF00; color: #0000FF; } 
 		.color-אסף { background-color: #FFECB3; color: #c62828; } 
-		.color-ליאני { background-color: #7E57C2 !important; color: #ffffff !important; }
+		.color-ליאני { background-color: #7E57C2; color: #ffffff; }
 		.color-נתי {
 			background-color: transparent !important; /* מבטל את הרקע של הבועה */
 			box-shadow: none !important;            /* מבטל את הצללית */
@@ -292,13 +313,13 @@
 			visibility: visible;
 		}
 		.color-ערן { background-color: #e8eaf6; color: #3949ab; } 
-		.color-מאור { background-color: #FFFDE7; color: #212121; } 
+		.color-מאור { background-color: #FFF9C4; color: #212121; } 
 		.color-ניר { background-color: #FF0000; color: #FFFFFF; } 
 		.color-חורחה { background-color: #fce4ec; color: #d81b60; } 
-		.color-שלומי { background-color: #A1887F !important; color: #ffffff !important; }
+		.color-שלומי { background-color: #A1887F; color: #ffffff; }
 		.color-יפתח { background-color: #f0f4c3; color: #827717; } 
 		.color-חברוני { background-color: #c8e6c9; color: #33691e; } 
-		.color-ויקטור { background-color: #FFB300 !important; color: #ffffff !important; }
+		.color-ויקטור { background-color: #FFB300; color: #ffffff; }
 				.color-גולן {
 			background-color: #D32F2F !important;
 			background-image: conic-gradient(#ffffff 90deg, transparent 90deg 180deg, #ffffff 180deg 270deg, transparent 270deg);
@@ -325,9 +346,11 @@
 			border-collapse: separate;
 			border-spacing: 0;
 			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+			border-left: 4px solid var(--primary-blue);
 			border-radius: 12px;
 			overflow: hidden;
 			border: 1px solid #f0f0f0;
+			backdrop-filter: blur(2px);
 		}
 
 		#summary-table thead { background-color: var(--summary-header); color: white; }
@@ -346,8 +369,8 @@
 		}
 
 		/* סטטוסים בסיכום */
-		.shifts-5-count { background-color: #E3F2FD !important; color: #0D47A1 !important; font-weight: bold; border-right: 6px solid #1976D2; }
-		.shifts-4-count { background-color: #C8E6C9; color: #1B5E20; }
+		.shifts-5-count { background-color: #E3F2FD !important; color: #0D47A1 !important; font-weight: bold; border-right: 6px solid #1976D2; box-shadow: inset 0 0 6px rgba(0,0,0,0.1);}
+		.shifts-4-count { background-color: #C8E6C9; color: #1B5E20; border-right: 4px solid #1B5E20; font-weight: bold; }
 		.low-shifts { background-color: #FBECEC; color: var(--accent-red); font-weight: bold; }
 
 		/* =========================================
@@ -360,6 +383,7 @@
 			.guards-selection-side-panel {
 				position: static;
 				width: 100%;
+				top: auto;
 			}
 			#schedule-table {
 				display: block;
@@ -367,36 +391,20 @@
 			}
 		}
 		
-		/* כותרת מודרנית לקובץ המורד */
-		.modern-main-header {
-			text-align: center;
-			margin: 30px 0;
-			font-size: 2.5em;
-			font-weight: 800;
-			background: linear-gradient(135deg, var(--primary-blue), #004D40);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			position: relative;
-			display: block;
-			width: fit-content;
-			margin-left: auto;
-			margin-right: auto;
-		}
-
-		/* פס דקורטיבי מתחת לכותרת */
 		.modern-main-header {
 			text-align: center;
 			margin: 40px auto;
 			padding: 15px 40px;
 			font-size: 2.2em;
-			font-weight: 700;
+			font-weight: 800;
 			background-color: white;
-			border-radius: 100px; /* עיגול מלא */
-			box-shadow: 0 10px 25px rgba(0,0,0,0.08); /* צל רך מאוד */
+			border-radius: 100px;
+			box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 			border: 1px solid #f0f0f0;
 			color: var(--primary-blue);
 			width: fit-content;
 		}
+
 		
 		/* =========================================
 		   8. עיצוב שורת הליווי 07:40 - אפקט בולט ותלת-ממד
@@ -450,6 +458,7 @@
 			padding: 15px;
 			border-radius: 10px;
 			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); /* צל עדין מאוד */
+			transition: all 0.2s ease;
 			max-width: 380px; /* רוחב מצומצם */
 			border: 1px solid var(--border-color);
 		}
@@ -508,13 +517,13 @@
 		#link-message { display: none; }
 
 		/* מחלקות מצב שחסרו */
-		.needs-selection { background: #ffebee !important; color:#b71c1c !important; font-weight:700; }
+		.needs-selection { background: #ffebee; color:#b71c1c; font-weight:700; }
 		.ok-shift { background: #ffffff; }
 		.night-shift-ok { background: #f3f7ff; }
-		.warning-text { color:#d32f2f; font-weight:700; }
+		.warning-text { color:#d32f2f; font-weight:700; text-shadow: 0 0 2px rgba(0,0,0,0.1); }
 		.night-limit-ok { color:#1b5e20; font-weight:700; }
 		.night-limit-fail { color:#b71c1c; font-weight:700; }
-		.night-limit-fail-row { background:#ffebee; }
+		.night-limit-fail-row { background:#ffebee; border-left: 4px solid #d32f2f; }
 
 		/* עיצוב שורת חיפוש שומרים */
 		#guardSearch {
@@ -525,18 +534,13 @@
 			border-radius: 20px;
 			font-size: 14px;
 			outline: none;
-		}
-		
-		/* מניעת סימון טקסט בבועות השומרים */
-		.person {
-			user-select: none;
-			-webkit-user-select: none;
+			transition: all 0.2s ease;
 		}
 
 		/* אפקט לחיצה על כפתורים */
 		button:active {
-			transform: scale(0.96) !important;
-			box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+			transform: scale(0.96);
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 		}
 
 		/* שיפור מראה תיבת הטקסט */
@@ -544,17 +548,16 @@
 			outline: none;
 			border-color: var(--secondary-blue);
 			box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.1);
+			transition: all 0.2s ease;
 		}
 		
 		/* =========================================
 		   אנימציית דגל מתנפנף
 		   ========================================= */
+
 		@keyframes wave-flag {
-			0% { transform: perspective(100px) rotateY(0deg) skewY(0deg); }
-			25% { transform: perspective(100px) rotateY(15deg) skewY(2deg); }
-			50% { transform: perspective(100px) rotateY(0deg) skewY(0deg); }
-			75% { transform: perspective(100px) rotateY(-15deg) skewY(-2deg); }
-			100% { transform: perspective(100px) rotateY(0deg) skewY(0deg); }
+			0%, 100% { transform: rotateY(0deg); }
+			50% { transform: rotateY(12deg); }
 		}
 
 		.waving-flag {
@@ -563,7 +566,31 @@
 			animation: wave-flag 2.5s infinite ease-in-out;
 			transform-origin: left center; /* הדגל "מחובר" לתורן בצד שמאל */
 			filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3)); /* צל עמוק יותר */
+			will-change: transform;
 		}
+
+		.google-sheet-button {
+			background-color: #f4b400;
+			color: #212121;
+			padding: 10px 30px;
+			font-weight: bold;
+			font-size: 16px;
+			border-radius: 8px;
+		}
+
+		.fetch-button {
+			background-color: #4CAF50;
+			color: white;
+			padding: 10px 15px;
+			min-width: 120px;
+			border-radius: 6px;
+		}
+
+		.quick-fetch-button {
+			background-color: var(--btn-generate);
+			color: white;
+		}
+
 		
 	</style>
 </head>
@@ -585,13 +612,13 @@
 			
 			<div style="text-align: center; margin-bottom: 15px;">
 				<a href="https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0" target="_blank" style="text-decoration: none;">
-					<button style="background-color: #f4b400; color: #212121; padding: 10px 30px; font-weight: bold; font-size: 16px;">
+					<button class="google-sheet-button">
 						פתח גיליון נתונים (Google Sheets) 📄
 					</button>
 				</a>
 			</div>
 			<div style="display: flex; gap: 10px; margin-bottom: 5px; margin-top: 10px;"> <input type="text" id="googleSheetUrl" placeholder="הדבק כאן את כתובת ה-Web App..." style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; direction: ltr; text-align: left;">
-				<button id="fetchFromSheetButton" style="background-color: #4CAF50; color: white; padding: 10px 15px; min-width: 120px;">משוך נתונים 🔄</button>
+				<button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
 			</div>
 			
 			<p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
@@ -604,11 +631,10 @@
 			<div class="editor-layout-row">
 				
 				<div class="textarea-container">
-					<h3>נתוני משמרות לעריכה ומקור הנתונים 📝</h3>
 					<textarea id="dataToAnalyze" 
 						title="נתוני משמרות לעריכה וניתוח"
-						placeholder="הדבק את נתוני המשמרות כאן (פורמט: יום שני\nשעות עובד1 עובד2...)">
-					</textarea>
+						placeholder="הדבק את נתוני המשמרות כאן (יום שני → שעות → עובד1 עובד2...)">
+					<textarea id="dataToAnalyze" ...></textarea>
 				</div>
 
 				<div class="guards-selection-side-panel">
@@ -618,7 +644,7 @@
 					</p>
 					<div id="guardButtonsContainer" class="guard-selector-container" style="box-shadow: none; border: 1px solid #eee; background: #fafafa;">
 						</div>
-					<textarea id="guardsFor5Shifts" style="display:none;"></textarea>
+					<input type="hidden" id="guardsFor5Shifts">
 				</div>
 
 			</div>
@@ -626,7 +652,7 @@
             <div id="button-group">
                 <button id="analyzeButton">נתח נתונים 🔍</button>
                 <button id="downloadButton">הורד קובץ CSV ⬇️</button>
-                <button id="generateLinkButton">הורד טבלת HTML מעוצבת 💾</button> 
+                <button id="generateLinkButton">הורד טבלת HTML מעוצבת 💾</button>
                 <button id="resetButton">אפס נתונים 🗑️</button>
             </div>
         </div>
@@ -634,7 +660,7 @@
     </div>
     
     <div id="main-button-wrapper">
-		<button id="quickFetchButton" style="background-color: var(--btn-generate);">משוך נתונים מהיר 🔄</button>
+		<button id="quickFetchButton" class="quick-fetch-button">משוך נתונים מהיר 🔄</button>
         <button id="autoScheduleButton">סדר אוטומטי 🤖</button>
     </div>
 
@@ -661,29 +687,27 @@
         const MAX_ITERATIONS = 10; // מספר ניסיונות סידור אוטומטי
 		const EXPECTED_DAYS = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'];
         
-        const EXPECTED_TIME_SLOTS = [
-            'ליווי 07:40 (Assist)',      // 0
-            '02:00 - 06:00 (Night)',     // 1
-            '06:00 - 10:00',             // 2
-            '10:00 - 14:00',             // 3
-            '14:00 - 18:00',             // 4
-            '18:00 - 22:00',             // 5
-            '22:00 - 02:00 (Night)'      // 6
+		const EXPECTED_TIME_SLOTS = [
+            '02:00 - 06:00 (Night)',      // אינדקס 0
+            '06:00 - 10:00',              // 1
+            '10:00 - 14:00',              // 2
+            '14:00 - 18:00',              // 3
+            '18:00 - 22:00',              // 4
+            '22:00 - 02:00 (Night)'       // 5
         ];
 
-        // מזהי משמרות קריטיים
-        const ASSIST_SHIFT_INDEX = EXPECTED_TIME_SLOTS.indexOf('ליווי 07:40 (Assist)'); 
-        const NIGHT_SHIFT_2_6_INDEX = EXPECTED_TIME_SLOTS.indexOf('02:00 - 06:00 (Night)');
-        const NIGHT_SHIFT_22_2_INDEX = EXPECTED_TIME_SLOTS.indexOf('22:00 - 02:00 (Night)');
-        const MORNING_SHIFT_6_10_INDEX = EXPECTED_TIME_SLOTS.indexOf('06:00 - 10:00');
-        const MORNING_SHIFT_10_14_INDEX = EXPECTED_TIME_SLOTS.indexOf('10:00 - 14:00'); 
-        const AFTERNOON_SHIFT_14_18_INDEX = EXPECTED_TIME_SLOTS.indexOf('14:00 - 18:00');
-        const NIGHT_SHIFT_02_06_INDEX = NIGHT_SHIFT_2_6_INDEX; // קבוע שנוסף לתיקון שגיאת ReferenceError
+		// מזהי משמרות קריטיים מעודכנים (הכל קפץ למעלה)
+        const NIGHT_SHIFT_2_6_INDEX = 0;
+        const NIGHT_SHIFT_22_2_INDEX = 5;
+        const MORNING_SHIFT_6_10_INDEX = 1;
+        const MORNING_SHIFT_10_14_INDEX = 2; 
+        const AFTERNOON_SHIFT_14_18_INDEX = 3;
+        const NIGHT_SHIFT_02_06_INDEX = 0;
 
-        // ** חדש: זיהוי משמרות עוקבות שיוצרות בעיית מנוחת 8 שעות **
+   		// עדכון בדיקת משמרות עוקבות (מניעת רצף מסוכן)
         const CONSECUTIVE_SHIFT_CHECK = {
-            [EXPECTED_TIME_SLOTS.indexOf('18:00 - 22:00')]: EXPECTED_TIME_SLOTS.indexOf('14:00 - 18:00'),
-            [EXPECTED_TIME_SLOTS.indexOf('22:00 - 02:00 (Night)')]: EXPECTED_TIME_SLOTS.indexOf('18:00 - 22:00'),
+            [4]: 3, // משמרת 18-22 בודקת את 14-18
+            [5]: 4  // משמרת 22-02 בודקת את 18-22
         };
 
         // מפת צבעים (רשימת העובדים הזמינים לסידור)
@@ -1209,7 +1233,7 @@
 
             // כאן אנחנו מוסיפים את הקוד שיופיע בתוך הקובץ שנשלח בוואטסאפ
             const highlightScript = `
-                document.addEventListener('mouseover', function (e) {
+            	document.addEventListener('mouseover', function (e) {
                     if (e.target.classList.contains('person')) {
                         const name = e.target.textContent.trim();
                         document.querySelectorAll('.person').forEach(el => {
@@ -1777,14 +1801,22 @@
 		
     
 
-		// סגירת ה-mouseout הקודם
-
-        // --- ניהול הבלטת שמות סופי ומוגן מהבהוב (מחשב + נייד) ---
-        let lockedName = null; 
-        let lastTouchTime = 0; 
+// --- ניהול הבלטת שמות (Spotlight) סופי ---
+        let lockedName = null;
 
         function updateHighlights(nameToHighlight) {
-            const allPersons = document.querySelectorAll('.person');
+            const container = document.getElementById('results-container');
+            if (!container) return;
+
+            // הפעלת מצב זרקור על המיכל (זה יפעיל את ה-CSS)
+            if (nameToHighlight) {
+                container.classList.add('spotlight-active');
+            } else {
+                container.classList.remove('spotlight-active');
+            }
+
+            // סימון השמות הספציפיים
+            const allPersons = container.querySelectorAll('.person');
             allPersons.forEach(el => {
                 if (nameToHighlight && el.textContent.trim() === nameToHighlight) {
                     el.classList.add('highlight-name');
@@ -1792,40 +1824,34 @@
                     el.classList.remove('highlight-name');
                 }
             });
+            
+            // כפייה על הדפדפן בנייד לרנדר מחדש
+            void container.offsetHeight; 
         }
 
-        document.addEventListener('touchstart', function() {
-            lastTouchTime = Date.now();
-        }, { passive: true });
-
-        document.addEventListener('mouseover', function (e) {
-            if (Date.now() - lastTouchTime < 500) return;
+        // מאזין לחיצה יחיד וחזק - עובד מעולה בטאץ'
+        document.addEventListener('click', function (e) {
             const personEl = e.target.closest('.person');
-            if (personEl && !lockedName) {
+            
+            if (personEl) {
+                const clickedName = personEl.textContent.trim();
+                lockedName = (lockedName === clickedName) ? null : clickedName;
+            } else if (!e.target.closest('button')) {
+                lockedName = null;
+            }
+            updateHighlights(lockedName);
+        });
+
+        // Hover למחשב בלבד (לא ירוץ בטלפון)
+        document.addEventListener('mouseover', function (e) {
+            const personEl = e.target.closest('.person');
+            if (personEl && !lockedName && window.matchMedia("(pointer: fine)").matches) {
                 updateHighlights(personEl.textContent.trim());
             }
         });
 
         document.addEventListener('mouseout', function (e) {
-            if (Date.now() - lastTouchTime < 500) return;
-            if (!lockedName) {
-                updateHighlights(null);
-            }
-        });
-
-        document.addEventListener('click', function (e) {
-            const personEl = e.target.closest('.person');
-            if (personEl) {
-                const clickedName = personEl.textContent.trim();
-                if (lockedName === clickedName) {
-                    lockedName = null;
-                    updateHighlights(null);
-                } else {
-                    lockedName = clickedName;
-                    updateHighlights(clickedName);
-                }
-            } else {
-                lockedName = null;
+            if (!lockedName && window.matchMedia("(pointer: fine)").matches) {
                 updateHighlights(null);
             }
         });
