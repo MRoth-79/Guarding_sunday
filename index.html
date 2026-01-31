@@ -594,10 +594,10 @@
 		
 	</style>
 </head>
-<body onload="initializeData(); document.getElementById('analyzeButton').click();">
-
-<div class="container">
-    <h2>מנתח טבלת משמרות שבועית 📅</h2>
+<body>
+	<div class="modern-main-header waving-flag">
+		מנתח טבלת משמרות שבועית 📅
+	</div>
     
     <div id="input-section-wrapper">
         
@@ -696,13 +696,12 @@
             '22:00 - 02:00 (Night)'       // 5
         ];
 
-		// מזהי משמרות קריטיים מעודכנים (הכל קפץ למעלה)
-        const NIGHT_SHIFT_2_6_INDEX = 0;
-        const NIGHT_SHIFT_22_2_INDEX = 5;
+		// מזהי משמרות קריטיים - המקור היחיד
+        const NIGHT_SHIFT_2_6_INDEX = 0;   // לילה מאוחר
         const MORNING_SHIFT_6_10_INDEX = 1;
         const MORNING_SHIFT_10_14_INDEX = 2; 
         const AFTERNOON_SHIFT_14_18_INDEX = 3;
-        const NIGHT_SHIFT_02_06_INDEX = 0;
+        const NIGHT_SHIFT_22_2_INDEX = 5;  // לילה מוקדם		
 
    		// עדכון בדיקת משמרות עוקבות (מניעת רצף מסוכן)
         const CONSECUTIVE_SHIFT_CHECK = {
@@ -712,17 +711,18 @@
 
         // מפת צבעים (רשימת העובדים הזמינים לסידור)
         const colorMap = {
-            'אמיר': 'color-אמיר', 'נמרוד': 'color-נמרוד', 'יובי': 'color-יובי', 'טגניה': 'color-טגניה',
-            'ישי': 'color-ישי', 'גולן': 'color-גולן', 'חסון': 'color-חסון', 'לישע': 'color-לישע',
-            'עידן': 'color-עידן', 'חגי': 'color-חגי', 'סתיו': 'color-סתיו', 'אסף': 'color-אסף',
-            'ליאני': 'color-ליאני', 'נתי': 'color-נתי', 'ערן': 'color-ערן', 'מאור': 'color-מאור',
-            'ניר': 'color-ניר', 'חורחה': 'color-חורחה', 'שלומי': 'color-שלומי', 'יפתח': 'color-יפתח',
-            'חברוני': 'color-חברוני', 'ויקטור': 'color-ויקטור',
-        };
+		'אמיר': 'color-אמיר', 'נמרוד': 'color-נמרוד', 'יובי': 'color-יובי', 'טגניה': 'color-טגניה',
+		'ישי': 'color-ישי', 'גולן': 'color-גולן', 'חסון': 'color-חסון', 'לישע': 'color-לישע',
+		'עידן': 'color-עידן', 'חגי': 'color-חגי', 'סתיו': 'color-סתיו', 'אסף': 'color-אסף',
+		'ליאני': 'color-ליאני', 'נתי': 'color-נתי', 'ערן': 'color-ערן', 'מאור': 'color-מאור',
+		'ניר': 'color-ניר', 'חורחה': 'color-חורחה', 'שלומי': 'color-שלומי', 'יפתח': 'color-יפתח',
+		'חברוני': 'color-חברוני', 'ויקטור': 'color-ויקטור',
+		};
 
-        /**
-         * פונקציה לאתחולנים והצבת תאריך יום ראשון (היום הנוכחי)
-         */
+		/**
+		 * פונקציה לאתחול והצבת תאריך יום ראשון (היום הנוכחי)
+		 */
+
 		function initializeData() {
 			document.getElementById('dataToAnalyze').value = INITIAL_SCHEDULE_DATA; 
 			
@@ -983,7 +983,7 @@
 
                     // 5.2 Check 02:00-06:00 (Same Day) to Day (Same Day Block until 18:00)
 					if (rowIndex === MORNING_SHIFT_6_10_INDEX || rowIndex === MORNING_SHIFT_10_14_INDEX || rowIndex === AFTERNOON_SHIFT_14_18_INDEX) {
-						const night02_06_shift_cell = scheduleData[NIGHT_SHIFT_02_06_INDEX][colIndex];
+						const night02_06_shift_cell = scheduleData[NIGHT_SHIFT_2_6_INDEX][colIndex];
 						const nightNames = night02_06_shift_cell.split(',').map(n => n.trim()).filter(n => n.length > 0);
 						
 						names.forEach(currentName => {
@@ -1001,7 +1001,7 @@
 					}
                     
                     // 6. **בדיקת הפרת רצף לילות (22-02 אתמול -> 02-06 היום)**
-					if (rowIndex === NIGHT_SHIFT_02_06_INDEX && colIndex > 0) {
+					if (rowIndex === NIGHT_SHIFT_2_6_INDEX && colIndex > 0) {
 						const prevDayIndex = colIndex - 1;
 						const prevNightShiftCell = scheduleData[NIGHT_SHIFT_22_2_INDEX][prevDayIndex];
 						const prevNightNames = prevNightShiftCell.split(',').map(n => n.trim()).filter(n => n.length > 0);
@@ -1411,10 +1411,10 @@
                                     }
                                 } 
                                 
-                                // מעקב לילה 02-06 (לצורך חסימה עד 18:00 באותו יום)
-                                if (shiftIndex === NIGHT_SHIFT_02_06_INDEX) {
-                                    night02_06_block[dayIndex].add(name); 
-                                }
+								// מעקב לילה 02-06 - שימוש במשתנה המאוחד
+								if (shiftIndex === NIGHT_SHIFT_2_6_INDEX) {
+									night02_06_block[dayIndex].add(name); 
+								}
 
                                 const nextShiftIndex = shiftIndex + 1;
                                 if (CONSECUTIVE_SHIFT_CHECK[nextShiftIndex] === shiftIndex) {
@@ -1855,6 +1855,12 @@
                 updateHighlights(null);
             }
         });
+
+		document.addEventListener("DOMContentLoaded", () => {
+			initializeData();
+			document.getElementById("analyzeButton").click();
+		});
+
     </script>
 </body>
 </html>
