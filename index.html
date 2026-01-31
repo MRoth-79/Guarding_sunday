@@ -755,20 +755,28 @@
 			document.getElementById('dataToAnalyze').value = INITIAL_SCHEDULE_DATA; 
 			
 			const today = new Date();
-			let dayOfWeek = today.getDay(); // 0 = ראשון
+			// גט-דיי נותן את היום בשבוע לפי הזמן המקומי בישראל
+			let dayOfWeek = today.getDay(); // 0 = ראשון, 1 = שני...
 			
-			// חישוב המרחק ליום ראשון האחרון/הנוכחי
-			today.setDate(today.getDate() - dayOfWeek);
+			// חישוב הימים ליום ראשון הבא (אם היום ראשון, זה יקפוץ לראשון הבא בעוד 7 ימים)
+			let daysToNextSunday = 7 - dayOfWeek;
+			if (dayOfWeek === 0) daysToNextSunday = 7; 
 			
-			const formattedDate = today.toISOString().split('T')[0];
+			// הוספת הימים לתאריך הנוכחי
+			today.setDate(today.getDate() + daysToNextSunday);
+			
+			// פורמט ידני כדי לעקוף את בעיית ה-UTC (שעון גריניץ')
+			const year = today.getFullYear();
+			const month = String(today.getMonth() + 1).padStart(2, '0');
+			const day = String(today.getDate()).padStart(2, '0');
+			
+			const formattedDate = `${year}-${month}-${day}`;
 			document.getElementById('startDate').value = formattedDate;
 
 			const savedUrl = localStorage.getItem('googleSheetUrl');
 			if (savedUrl) {
 				document.getElementById('googleSheetUrl').value = savedUrl;
 			}
-			
-			if (typeof generateGuardsButtons === "function") generateGuardsButtons();
 		}
 
         /**
