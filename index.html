@@ -89,7 +89,18 @@
 		#downloadButton { background-color: var(--btn-download); }
 		#generateLinkButton { background-color: var(--btn-generate); }
 		#resetButton { background-color: var(--btn-reset); }
-		#autoScheduleButton { background-color: var(--btn-auto); padding: 15px 40px; font-size: 19px; width: 100%; max-width: 400px; }
+		#autoScheduleButton { background-color: var(--btn-auto); padding: 15px 40px; font-size: 19px; width: auto; min-width: 250px; max-width: 400px; }
+
+		/* מרכוז שתי קבוצות הכפתורים */
+		#button-group, #main-button-wrapper {
+			display: flex;            /* הופך את המיכל לגמיש */
+			justify-content: center;   /* ממרכז את הכפתורים אופקית */
+			align-items: center;       /* מיישר אותם אנכית */
+			flex-wrap: wrap;           /* מאפשר לכפתורים לרדת שורה בנייד במקום להימחץ */
+			gap: 12px;                 /* יוצר רווח שווה בין הכפתורים */
+			margin: 25px auto;         /* מוסיף מרווח מלמעלה ומלמטה וממרכז את המיכל עצמו */
+			width: 100%;               /* מוודא שהמיכל פורס את כל הרוחב כדי שהמרכז יהיה אמיתי */
+		}
 
 		/* כפתורי בחירת שומרים למשמרות (פאנל צדי) */
 		.guard-selector-container {
@@ -397,19 +408,27 @@
 			}
 		}
 		
-		.modern-main-header {
-			text-align: center;
-			margin: 40px auto;
-			padding: 15px 40px;
-			font-size: 2.2em;
-			font-weight: 800;
-			background-color: white;
-			border-radius: 100px;
-			box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-			border: 1px solid #f0f0f0;
-			color: var(--primary-blue);
-			width: fit-content;
-		}
+			.modern-main-header {
+				/* מרכוז אופקי מושלם שדורס את האנימציה */
+				display: table !important;  
+				margin: 40px auto !important; 
+				width: fit-content;
+				text-align: center;
+				
+				/* העיצוב הויזואלי שלך */
+				padding: 15px 40px;
+				font-size: 2.2em;
+				font-weight: 800;
+				background-color: white;
+				border-radius: 100px;
+				box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+				border: 1px solid #f0f0f0;
+				color: var(--primary-blue);
+				
+				/* מניעת תזוזות מיותרות */
+				position: relative;
+				clear: both;
+			}
 
 		
 		/* =========================================
@@ -601,7 +620,6 @@
 			border-radius: 8px;       /* עיצוב אחיד */
 			transition: all 0.2s ease;
 		}
-
 		
 	</style>
 </head>
@@ -644,8 +662,7 @@
 				<div class="textarea-container">
 					<textarea id="dataToAnalyze" 
 						title="נתוני משמרות לעריכה וניתוח"
-						placeholder="הדבק את נתוני המשמרות כאן (יום שני → שעות → עובד1 עובד2...)">
-					<textarea id="dataToAnalyze" ...></textarea>
+						placeholder="הדבק את נתוני המשמרות כאן (יום ראשון → שעות → עובד1 עובד2...)"></textarea>
 				</div>
 
 				<div class="guards-selection-side-panel">
@@ -915,7 +932,7 @@
                 const isNightShift = timeSlotFull.includes('(Night)');
                 const isAssistanceShift = timeSlotFull.includes('(Assist)'); 
                 const isNight2to6 = rowIndex === NIGHT_SHIFT_2_6_INDEX;
-                const timeSlotDisplay = timeSlotFull.replace(' (Night)', '').replace(' (Assist)', '');
+                const timeSlotDisplay = timeSlotFull.replace(' (Night)', '').replace(' (Assist)', '').replace(' - ', '<br>');
                 
 				const maxAllowedInShift = 1; // כעת כל המשמרות מוגדרות לאדם אחד בלבד                
 
