@@ -202,6 +202,7 @@
 			overflow: hidden; 
 			text-overflow: ellipsis; 
 			white-space: nowrap;
+			max-width: 180px;
 		}
 
 		#schedule-table thead {
@@ -228,7 +229,7 @@
 		/* --- הדגשת סוף שבוע (שישי ושבת) באפרסק --- */
 		/* עמודה 6 היא שישי, עמודה 7 היא שבת */
 		#schedule-table th:nth-child(7), #schedule-table th:nth-child(8) {
-			background-color: #ff8a65 !important; /* שישי ושבת */
+			background-color: #ff8a65; /* שישי ושבת */
 		}
 
 		#schedule-table td:nth-child(7), #schedule-table td:nth-child(8) {
@@ -276,6 +277,11 @@
 			transition: all 0.15s ease;
 		}
 
+		.spotlight-active .person:hover:not(.highlight-name) {
+			transform: none;
+		}
+
+
 		/* 3. השם הנבחר - בולט ב-100% עם מסגרת עבה */
 		.person.highlight-name {
 			opacity: 1 !important;
@@ -321,7 +327,7 @@
 		.color-חברוני { background-color: #c8e6c9; color: #33691e; } 
 		.color-ויקטור { background-color: #FFB300; color: #ffffff; }
 				.color-גולן {
-			background-color: #D32F2F !important;
+			background-color: #D32F2F;
 			background-image: conic-gradient(#ffffff 90deg, transparent 90deg 180deg, #ffffff 180deg 270deg, transparent 270deg);
 			background-size: 10px 10px;
 			
@@ -356,7 +362,7 @@
 		#summary-table thead { background-color: var(--summary-header); color: white; }
 		#exceptions-table thead { background-color: #ef4444; color: white; }
 
-		#summary-table th, #summary-table td, 
+		#summary-table th, #summary-table td,
 		#exceptions-table th, #exceptions-table td {
 			padding: 16px;
 			text-align: center;
@@ -578,17 +584,22 @@
 			border-radius: 8px;
 		}
 
+		/* --- כפתורי Fetch (שלב 14, 15) --- */
 		.fetch-button {
 			background-color: #4CAF50;
 			color: white;
 			padding: 10px 15px;
 			min-width: 120px;
 			border-radius: 6px;
+			transition: all 0.2s ease; /* אנימציה חלקה */
 		}
 
 		.quick-fetch-button {
 			background-color: var(--btn-generate);
 			color: white;
+			padding: 12px 25px;       /* עיצוב אחיד */
+			border-radius: 8px;       /* עיצוב אחיד */
+			transition: all 0.2s ease;
 		}
 
 		
@@ -858,7 +869,13 @@
             }
 
             const datesForWeek = getDatesForWeek(startDateString);
-            const { days: dayHeaders, data: scheduleData } = parsedData;
+            if (parsedData.error) {
+				alert(parsedData.error);
+				return;
+			}
+
+			const { days: dayHeaders, data: scheduleData } = parsedData;
+
 			
 			const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
             const guardsFor5Set = new Set(guardsFor5Text.split(/[,\n]/).map(name => name.trim()).filter(name => name !== ''));
@@ -908,7 +925,11 @@
 
                 row.forEach((cellContent, colIndex) => {
                     const day = dayHeaders[colIndex];
-                    const names = cellContent.split(',').filter(name => name.trim().length > 0);
+                    const names = (cellContent || '')
+					.split(',')
+					.map(n => n.trim())
+					.filter(n => n.length > 0);
+
                     const numNames = names.length;
                     
                     if (!dailyCheck[day]) { dailyCheck[day] = new Set(); }
@@ -1233,14 +1254,7 @@
 
             // כאן אנחנו מוסיפים את הקוד שיופיע בתוך הקובץ שנשלח בוואטסאפ
             const highlightScript = `
-            	document.addEventListener('mouseover', function (e) {
-                    if (e.target.classList.contains('person')) {
-                        const name = e.target.textContent.trim();
-                        document.querySelectorAll('.person').forEach(el => {
-                            if (el.textContent.trim() === name) el.classList.add('highlight-name');
-                        });
-                    }
-                });
+
                 document.addEventListener('mouseout', function (e) {
                     if (e.target.classList.contains('person')) {
                         document.querySelectorAll('.person').forEach(el => el.classList.remove('highlight-name'));
@@ -1312,7 +1326,12 @@
             const initialParsedData = parseVerticalText(textContent);
 
             if (initialParsedData.error) {
-                document.getElementById('results-container').innerHTML = `<p class="warning-text">❌ שגיאה בניתוח נתונים קיימים. יש לתקן את נתוני הקלט לפני הסידור האוטומטי.</p>`;
+			const rc = document.getElementById('results-container');
+			rc.innerHTML = '';
+			const p = document.createElement('p');
+			p.id = 'initial-message';
+			p.textContent = 'הטעינה הראשונית תפעיל את הניתוח אוטומטית.';
+			rc.appendChild(p);
                 return;
             }
 
@@ -1721,12 +1740,14 @@
                 if (!response.ok) throw new Error(`שגיאת רשת (${response.status})`);
                 
                 const data = await response.text();
+				if (!data.trim()) throw new Error("התקבל טקסט ריק מהשרת");
 
-                dataTextArea.value = data; 
+
+                dataTextArea.value = data;
                 statusEl.textContent = '✅ נתונים נטענו בהצלחה! מנתח...';
                 statusEl.style.color = 'green';
                 
-                analyzeButton.click(); 
+                analyzeButton.click();
 
                 setTimeout(() => { statusEl.style.display = 'none'; }, 5000);
 
@@ -1743,7 +1764,7 @@
             const container = document.getElementById('guardButtonsContainer');
             if (!container) return;
             container.innerHTML = ''; 
-            Object.keys(colorMap).forEach(name => {
+            Object.keys(colorMap).sort().forEach(name => {
                 const btn = document.createElement('button');
                 btn.textContent = name;
                 btn.className = 'guard-btn';
@@ -1784,14 +1805,14 @@
 		document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
 		
 		// הבלטת כל השמות הזהים בטבלה בעת מעבר עכבר
-        document.addEventListener('mouseover', function (e) {
-            if (e.target.classList.contains('person')) {
-                const name = e.target.textContent.trim();
-                document.querySelectorAll('.person').forEach(el => {
-                    if (el.textContent.trim() === name) el.classList.add('highlight-name');
-                });
-            }
-        });
+		document.addEventListener('mouseover', function (e) {
+			if (lockedName) return; // אל תעשה hover כשיש spotlight
+			const personEl = e.target.closest('.person');
+			if (personEl) {
+				updateHighlights(personEl.textContent.trim());
+			}
+		});
+
 
         document.addEventListener('mouseout', function (e) {
             if (e.target.classList.contains('person')) {
@@ -1826,7 +1847,7 @@
             });
             
             // כפייה על הדפדפן בנייד לרנדר מחדש
-            void container.offsetHeight; 
+            void container.offsetHeight; // force reflow for mobile Safari
         }
 
         // מאזין לחיצה יחיד וחזק - עובד מעולה בטאץ'
