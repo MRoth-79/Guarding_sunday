@@ -329,13 +329,14 @@ box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
 filter: brightness(1.05);
 }
 
-/* 2. כשהזרקור פעיל: המיכל מקבל קלאס, וכל מי שלא נבחר דוהה */
-.spotlight-active .person:not(.highlight-name) {
-opacity: 0.4 !important;    /* שקיפות ברורה כדי שהנבחר יבלוט */
-filter: grayscale(0.5);     /* הפיכה לאפור עדין */
-transform: scale(0.95);     /* הקטנה קלה למראה עומק */
-pointer-events: none;       /* מונע מהאצבע "להיתקע" על שמות אחרים */
-transition: all 0.15s ease;
+/* בנייד: עמעום עדין יותר (20% בלבד) וללא חסימת קליקים */
+@media (pointer: coarse) {
+  .spotlight-active .person:not(.highlight-name) {
+    opacity: 0.8 !important;     /* ← 20% שקיפות */
+    filter: none;                 /* בלי להפוך לאפור */
+    transform: none;              /* בלי הקטנה */
+    pointer-events: auto;         /* אפשר להקיש על שם אחר */
+  }
 }
 
 .spotlight-active .person:hover:not(.highlight-name) {
