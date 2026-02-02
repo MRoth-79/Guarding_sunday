@@ -480,11 +480,6 @@ position: relative;
 clear: both;
 }
 
-#results-container {
-    transition: transform 0.3s ease;
-    transform-origin: top center; /* כיווץ כלפי מעלה ומרכז */
-}
-
 .fit-mode {
     width: 100% !important;
     overflow-x: hidden !important;
@@ -739,7 +734,6 @@ placeholder="הדבק את נתוני המשמרות כאן (יום ראשון �
                 <button id="downloadButton">הורד קובץ CSV ⬇️</button>
                 <button id="generateLinkButton">הורד טבלת HTML מעוצבת 💾</button>
                 <button id="resetButton">אפס נתונים 🗑️</button>
-                <button id="fitToPageButton" style="background-color: #673AB7;">התאמה לעמוד 📱</button>
             </div>
         </div>
        
@@ -1537,47 +1531,53 @@ let exportTableHTML = lastRenderedTableHTML
 .replace(/ data-assist-type="[^"]*"/g, '');
 
         // --- קוד מתוקן שעובד ב-100% בנייד ---
-        const scriptsForFile = `
-            document.addEventListener('click', function (e) {
-                const personEl = e.target.closest('.person');
-                if (personEl) {
-                    const name = personEl.textContent.trim();
-                    const isHighlighted = personEl.classList.contains('highlight-name');
-                    document.querySelectorAll('.person').forEach(el => el.classList.remove('highlight-name'));
-                    if (!isHighlighted) {
-                        document.querySelectorAll('.person').forEach(el => {
-                            if (el.textContent.trim() === name) el.classList.add('highlight-name');
-                        });
-                    }
-                } else {
-                    document.querySelectorAll('.person').forEach(el => el.classList.remove('highlight-name'));
-                }
-            });
+const scriptsForFile = `
+// הדגשת שם בלחיצה (נשאר כרגיל)
+document.addEventListener('click', function (e) {
+const personEl = e.target.closest('.person');
+if (personEl) {
+const name = personEl.textContent.trim();
+const isHighlighted = personEl.classList.contains('highlight-name');
+document.querySelectorAll('.person').forEach(el => el.classList.remove('highlight-name'));
+if (!isHighlighted) {
+document.querySelectorAll('.person').forEach(el => {
+if (el.textContent.trim() === name) el.classList.add('highlight-name');
+});
+}
+} else {
+document.querySelectorAll('.person').forEach(el => el.classList.remove('highlight-name'));
+}
+});
 
-            function fitTable() {
-                const container = document.getElementById('results-container');
-                const table = document.getElementById('schedule-table');
-                if (!table || !container) return;
+// כיווץ אוטומטי למסך בעת פתיחה/סיבוב
+function autoFitTable() {
+const container = document.getElementById('results-container');
+const table = document.getElementById('schedule-table');
+if (!container || !table) return;
 
-                // ביטול כיווץ אם כבר קיים
-                if (container.style.transform && container.style.transform !== "scale(1)") {
-                    container.style.transform = "scale(1)";
-                    container.style.width = "100%";
-                    return;
-                }
+// איפוס לפני מדידה
+container.style.transformOrigin = 'top right'; // RTL
+container.style.transform = 'scale(1)';
+container.style.width = '100%';
 
-                // חישוב רוחב המסך לעומת רוחב הטבלה האמיתי
-                const screenWidth = document.documentElement.clientWidth - 20;
-                const tableWidth = table.scrollWidth;
+const screenWidth = document.documentElement.clientWidth - 12; // מרווח קטן
+const tableWidth  = table.scrollWidth;
 
-                if (tableWidth > screenWidth) {
-                    const scale = screenWidth / tableWidth;
-                    container.style.transformOrigin = "top right"; // חשוב מאוד לעברית!
-                    container.style.transform = "scale(" + scale + ")";
-                    container.style.width = (100 / scale) + "%";
-                }
-            }
-        `;
+if (tableWidth > screenWidth) {
+const scale = screenWidth / tableWidth;
+container.style.transform = 'scale(' + scale + ')';
+container.style.width = (100 / scale) + '%'; // מונע חיתוך ימני
+}
+}
+
+// הפעלה בטעינה ובשינוי גודל/סיבוב
+window.addEventListener('DOMContentLoaded', autoFitTable);
+window.addEventListener('load', autoFitTable);
+window.addEventListener('resize', function() {
+clearTimeout(window.__autoFitTO__);
+window.__autoFitTO__ = setTimeout(autoFitTable, 150);
+});
+`;
 
         const cleanHTMLContent = `
 <!DOCTYPE html>
@@ -1590,6 +1590,8 @@ let exportTableHTML = lastRenderedTableHTML
 ${style}
 body { padding: 5px; text-align: center; overflow-x: auto; -webkit-text-size-adjust: 100%; }
 
+html, body { width: 100%; overflow-x: hidden; } /* מונע פס גלילה רוחבי אחרי scale */
+
 /* 🔒 נעילת תאי הליווי בקובץ המיוצא בלבד */
 .assist-cell {
 user-select: none !important;
@@ -1598,26 +1600,17 @@ cursor: default !important;
 caret-color: transparent !important;
 }
 
-.no-print-btn {
-background: #673AB7; color: white; border: none;
-padding: 16px 20px; border-radius: 12px; font-size: 18px;
-font-weight: bold; margin: 10px auto 20px auto; cursor: pointer;
-display: block; width: 90%; max-width: 300px;
-box-shadow: 0 4px 10px rgba(0,0,0,0.2);
--webkit-appearance: none;
-}
 #results-container {
 transition: transform 0.2s ease;
 width: 100%;
 display: block;
 }
+
 #schedule-table { margin-right: 0; margin-left: auto; } /* קיבוע לימין */
 </style>
 </head>
 <body>
                 <h1 class="modern-main-header" style="font-size: 1.5em; padding: 10px;">${dynamicHeader}</h1>
-               
-                <button class="no-print-btn" onclick="fitTable()">התאמה למסך הטלפון 📱</button>
 
                 <div id="results-container">${exportTableHTML}</div>
                
@@ -2188,36 +2181,6 @@ initializeData();
 generateGuardsButtons();  // ← הוספה
 document.getElementById("analyzeButton").click();
 });
-
-function fitTableToPage() {
-    const container = document.getElementById('results-container');
-    const table = document.getElementById('schedule-table');
-   
-    if (!table) return;
-
-    // אם כבר הופעל כיווץ, נחזיר למצב רגיל בלחיצה חוזרת
-    if (container.style.transform && container.style.transform !== "scale(1)") {
-        container.style.transform = "scale(1)";
-        container.style.width = "100%";
-        return;
-    }
-
-    const windowWidth = window.innerWidth - 40; // מרווח ביטחון מהצדדים
-    const tableWidth = table.offsetWidth;
-
-    if (tableWidth > windowWidth) {
-        const scale = windowWidth / tableWidth;
-        container.style.transform = `scale(${scale})`;
-        container.style.width = `${100 / scale}%`; // מונע יצירת חלל ריק בצדדים
-        alert(`הטבלה הותאמה בשיעור של ${Math.round(scale * 100)}%`);
-    } else {
-        container.style.transform = "scale(1)";
-    }
-}
-
-// חיבור הכפתור לאירוע לחיצה
-document.getElementById('fitToPageButton').addEventListener('click', fitTableToPage);
-
 
     </script>
 </body>
