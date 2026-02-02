@@ -1960,75 +1960,73 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
             }, 8000);
         }
 
-/**
-* פונקציה חדשה להורדת הנתונים המנותחים (טבלת המשמרות הסופית) כקובץ CSV.
-* כולל תיקון "sep=\t" לפתרון בעיות יישור באקסל (אופיס/עברית).
-*/
-function downloadCsvFile() {
-const textContent = document.getElementById('dataToAnalyze').value;
-const startDateString = document.getElementById('startDate').value;
-const parsedData = parseVerticalText(textContent); // מנתח את הנתונים הנוכחיים
+        /**
+        * פונקציה חדשה להורדת הנתונים המנותחים (טבלת המשמרות הסופית) כקובץ CSV.
+        * כולל תיקון "sep=\t" לפתרון בעיות יישור באקסל (אופיס/עברית).
+        */
+        function downloadCsvFile() {
+        const textContent = document.getElementById('dataToAnalyze').value;
+        const startDateString = document.getElementById('startDate').value;
+        const parsedData = parseVerticalText(textContent); // מנתח את הנתונים הנוכחיים
 
-if (parsedData.error || !textContent.trim()) {
-alert('❌ לא נמצאו נתונים תקינים או שאין נתונים כלל. נתח/סדר אוטומטי תחילה.');
-return;
+        if (parsedData.error || !textContent.trim()) {
+        alert('❌ לא נמצאו נתונים תקינים או שאין נתונים כלל. נתח/סדר אוטומטי תחילה.');
+        return;
+        }
+
+        const { days: dayHeaders, data: scheduleData } = parsedData;
+        // **חדש: קריאת ימים שבהם הליווי מבוטל (לצורך תצוגה)**
+                    const holidaySet = new Set();
+                    const holidayCheckboxes = document.querySelectorAll('#holidayChecklist input[type="checkbox"]:checked');
+                    holidayCheckboxes.forEach(cb => {
+                        holidaySet.add(parseInt(cb.value, 10)); // cb.value הוא אינדקס היום (0-6)
+                    });
+        const datesForWeek = getDatesForWeek(startDateString);
+
+        // יצירת כותרת ה-CSV: שעות | יום א' (תאריך) | יום ב' (תאריך) | ...
+        let csvHeaders = ['שעות / יום'];
+        dayHeaders.forEach((day, index) => {
+        csvHeaders.push(`${day} (${datesForWeek[index]})`);
+        });
+
+        // *** זהו התיקון העיקרי - הוספת "sep=\t" לטובת אקסל ***
+        let csvContent = "sep=\t\n" + csvHeaders.join('\t') + '\n';
+
+        // יצירת שורות הנתונים
+        scheduleData.forEach((row, rowIndex) => {
+        const timeSlotFull = EXPECTED_TIME_SLOTS[rowIndex];
+        const timeSlotDisplay = timeSlotFull.split('(')[0].trim();
+
+        let csvRow = [timeSlotDisplay];
+
+        row.forEach(cellContent => {
+        // הופך את הנתונים המשובצים למחרוזת אחת מופרדת בפסיקים
+        const names = cellContent.split(',').filter(name => name.trim().length > 0);
+        csvRow.push(names.join(', '));
+        });
+
+        csvContent += csvRow.join('\t') + '\n';
+        });
+
+        const bom = '\ufeff'; // הוספת BOM לטיפול נכון בעברית
+        const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download = `schedule_table_analyzed_${startDateString}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+
+        const msg = document.getElementById('link-message');
+        msg.querySelector('p').textContent = '✅ קובץ CSV מנותח הורד בהצלחה!';
+        msg.style.backgroundColor = '#546E7A';
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 3000);
 }
-
-const { days: dayHeaders, data: scheduleData } = parsedData;
-// **חדש: קריאת ימים שבהם הליווי מבוטל (לצורך תצוגה)**
-            const holidaySet = new Set();
-            const holidayCheckboxes = document.querySelectorAll('#holidayChecklist input[type="checkbox"]:checked');
-            holidayCheckboxes.forEach(cb => {
-                holidaySet.add(parseInt(cb.value, 10)); // cb.value הוא אינדקס היום (0-6)
-            });
-const datesForWeek = getDatesForWeek(startDateString);
-
-// יצירת כותרת ה-CSV: שעות | יום א' (תאריך) | יום ב' (תאריך) | ...
-let csvHeaders = ['שעות / יום'];
-dayHeaders.forEach((day, index) => {
-csvHeaders.push(`${day} (${datesForWeek[index]})`);
-});
-
-// *** זהו התיקון העיקרי - הוספת "sep=\t" לטובת אקסל ***
-let csvContent = "sep=\t\n" + csvHeaders.join('\t') + '\n';
-
-// יצירת שורות הנתונים
-scheduleData.forEach((row, rowIndex) => {
-const timeSlotFull = EXPECTED_TIME_SLOTS[rowIndex];
-const timeSlotDisplay = timeSlotFull.split('(')[0].trim();
-
-let csvRow = [timeSlotDisplay];
-
-row.forEach(cellContent => {
-// הופך את הנתונים המשובצים למחרוזת אחת מופרדת בפסיקים
-const names = cellContent.split(',').filter(name => name.trim().length > 0);
-csvRow.push(names.join(', '));
-});
-
-csvContent += csvRow.join('\t') + '\n';
-});
-
-const bom = '\ufeff'; // הוספת BOM לטיפול נכון בעברית
-const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-const url = URL.createObjectURL(blob);
-const link = document.createElement('a');
-
-link.href = url;
-link.download = `schedule_table_analyzed_${startDateString}.csv`;
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-
-URL.revokeObjectURL(url);
-
-const msg = document.getElementById('link-message');
-msg.querySelector('p').textContent = '✅ קובץ CSV מנותח הורד בהצלחה!';
-msg.style.backgroundColor = '#546E7A';
-msg.style.display = 'block';
-setTimeout(() => { msg.style.display = 'none'; }, 3000);
-}
-
-
 
         async function fetchFromGoogleSheet(isQuickFetch = false) {
             const url = document.getElementById('googleSheetUrl').value;
