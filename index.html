@@ -860,7 +860,153 @@ return String(s).replace(/[&<>"']/g, m => (
 ));
 }
 
+/* === ליווי 07:40 – שמירה/טעינה לפי תאריך יום ראשון === */
+function getAssistWeekKey() {
+const startDateString = document.getElementById('startDate').value || 'no-date';
+return 'assist_0740__' + startDateString; // מפתח ייחודי לשבוע
+}
 
+function loadAssistArray() {
+try {
+const raw = localStorage.getItem(getAssistWeekKey());
+const arr = raw ? JSON.parse(raw) : null;
+return Array.isArray(arr) && arr.length === 7 ? arr : Array(7).fill('');
+} catch (e) {
+return Array(7).fill('');
+}
+}
+
+function saveAssistArray(arr) {
+try {
+localStorage.setItem(getAssistWeekKey(), JSON.stringify(arr));
+} catch (e) {
+console.warn('Failed saving assist data', e);
+}
+}
+
+/* === יצירת בועות שמות עם colorMap === */
+function toNameArray(str) {
+return String(str || '')
+.split(/[,\n]/)
+.map(n => n.trim())
+.filter(n => n.length > 0);
+}
+
+function renderPersonBubbles(namesArray, dayLabel, timeSlotTitle) {
+return (namesArray || []).map(raw => {
+const clean = raw.trim();
+const safeName = escapeHtml(clean);
+const key = clean.includes(' ') ? clean.replace(' ', '_') : clean;
+const className = colorMap[key] ? `person ${colorMap[key]}` : 'person';
+const safeTitle = `${safeName} - ${escapeHtml(dayLabel)}, ${escapeHtml(timeSlotTitle)}`;
+return `<span class="${className}" title="${safeTitle}">${safeName}</span>`;
+}).join('');
+}
+
+/* === המרת הקלדה לבועות בליווי === */
+const KNOWN_NAMES = Object.keys(colorMap).map(k => k.includes('_') ? k.replace('_', ' ') : k);
+
+function splitToTokens(text) {
+return String(text || '')
+.split(/[,\n]/)
+.map(s => s.trim())
+.filter(Boolean);
+}
+
+function placeCaretAtEnd(el) {
+try {
+el.focus();
+const range = document.createRange();
+range.selectNodeContents(el);
+range.collapse(false);
+const sel = window.getSelection();
+sel.removeAllRanges();
+sel.addRange(range);
+} catch {}
+}
+
+// מוסיף מפריד אחרי ההמרה כדי שתוכל להמשיך להקליד מיד (אפשר ', ' או ' ')
+function appendSeparatorAndFocus(cell, sep = ', ') {
+const lastNode = cell.lastChild;
+const needsSep =
+!lastNode ||
+(lastNode.nodeType === Node.TEXT_NODE && !/\s$/.test(lastNode.textContent)) ||
+(lastNode.nodeType !== Node.TEXT_NODE);
+
+if (needsSep) {
+cell.appendChild(document.createTextNode(sep));
+}
+placeCaretAtEnd(cell);
+}
+
+// המרה: שומרת בועות קיימות + ממירה שמות חדשים לבועות, משאירה לא מזוהים כטקסט
+function convertAssistCellToBubbles(cell) {
+const dayIdx = parseInt(cell.dataset.dayIndex, 10) || 0;
+const dayName = cell.dataset.dayName || '';
+
+// 1) אוספים שמות שכבר בועות
+const existing = Array.from(cell.querySelectorAll('.person'))
+.map(el => el.textContent.trim())
+.filter(Boolean);
+
+// 2) טקסט חופשי ללא הבועות
+const clone = cell.cloneNode(true);
+clone.querySelectorAll('.person').forEach(el => el.remove());
+const freeText = clone.innerText;
+
+// 3) מפרקים ומזהים
+const tokens = splitToTokens(freeText);
+const matchedSet = new Set(existing);
+const leftovers = [];
+
+tokens.forEach(tok => {
+if (!tok) return;
+if (KNOWN_NAMES.includes(tok)) matchedSet.add(tok);
+else leftovers.push(tok);
+});
+
+const matched = Array.from(matchedSet);
+
+// 4) בניית התוכן בתא
+const bubblesHTML = renderPersonBubbles(matched, dayName, 'ליווי 07:40');
+const leftoverText = leftovers.join(', ');
+cell.innerHTML = bubblesHTML + (leftoverText ? (' ' + escapeHtml(leftoverText)) : '');
+
+// 5) שמירת השמות המוכרים לשבוע
+const arr = loadAssistArray();
+arr[dayIdx] = matched.join(', ');
+saveAssistArray(arr);
+
+placeCaretAtEnd(cell);
+}
+
+// חיבור מאזינים לתאי ליווי (Enter/פסיק/blur/paste)
+function setupAssistEditors() {
+document.querySelectorAll('.assist-cell[contenteditable="true"]').forEach(cell => {
+cell.addEventListener('keydown', (e) => {
+if (e.key === 'Enter') {
+e.preventDefault();
+e.stopPropagation();
+convertAssistCellToBubbles(cell);
+appendSeparatorAndFocus(cell, ', ');
+} else if (e.key === ',') {
+e.preventDefault();
+e.stopPropagation();
+convertAssistCellToBubbles(cell);
+appendSeparatorAndFocus(cell, ' ');
+}
+});
+
+cell.addEventListener('blur', () => convertAssistCellToBubbles(cell));
+
+cell.addEventListener('paste', () => {
+setTimeout(() => {
+convertAssistCellToBubbles(cell);
+appendSeparatorAndFocus(cell, ' ');
+}, 0);
+});
+});
+}
         /**
          * פונקציה לניקוי אגרסיבי של שורה מתווים בלתי נראים וריווח (נשארת זהה)
          */
@@ -906,10 +1052,10 @@ if (parts.length > 0 && isTimeSlot) {
 const potentialNames = parts.slice(1);
 const names = potentialNames.filter(name => name.length > 0).map(name => name.trim());
 rawDayData[currentDay].push(names.join(','));
-} else if (isAssistanceSlot) {
-// מתעלמים ממשמרת ליווי בשלב הניתוח כדי לשמור על 6 משמרות/יום
 }
-``
+else if (isAssistanceSlot) {
+}
+
                 }
             });
 
@@ -994,6 +1140,26 @@ const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
             // סגירת שורת הכותרת ותחילת גוף הטבלה
             scheduleTableHTML += '</tr></thead><tbody>';
 
+/* --- שורת הליווי 07:40 (עריכה חיה) --- */
+const assistValues = loadAssistArray(); // מערך באורך 7 (א׳→שבת)
+scheduleTableHTML += `
+<tr class="red-assistance-shift">
+<td class="time-slot" title="ליווי 07:40">ליווי 07:40</td>
+${dayHeaders.map((day, dayIdx) => {
+const namesArr = toNameArray(assistValues[dayIdx] || '');
+const bubbles = renderPersonBubbles(namesArr, day, 'ליווי 07:40');
+return `
+<td class="assist-cell"
+contenteditable="true"
+data-day-index="${dayIdx}"
+data-day-name="${escapeHtml(day)}"
+data-assist-type="0740"
+title="${escapeHtml(day)} - ליווי 07:40">
+${bubbles}
+</td>`;
+}).join('')}
+</tr>
+`;
            
             const allShifts = {};
             const nightShift2to6Count = {};
@@ -1338,6 +1504,7 @@ tableHTML += exceptionsTableHTML + summaryTableHTML;
 
 // הצגת התוצאה הסופית במסך
 resultsContainer.innerHTML = tableHTML;
+setupAssistEditors();
         }
 
 
@@ -1361,6 +1528,13 @@ resultsContainer.innerHTML = tableHTML;
         const format = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
         const dynamicHeader = `טבלת משמרות ${format(dateSun)} - ${format(dateSat)}`;
         const style = document.querySelector('style').textContent;
+
+// --- 🔒 נעילת עריכת הליווי בקובץ המיוצא: מסירים contenteditable ותכונות data-* ---
+let exportTableHTML = lastRenderedTableHTML
+.replace(/contenteditable="true"/g, 'contenteditable="false"')
+.replace(/ data-day-index="[^"]*"/g, '')
+.replace(/ data-day-name="[^"]*"/g, '')
+.replace(/ data-assist-type="[^"]*"/g, '');
 
         // --- קוד מתוקן שעובד ב-100% בנייד ---
         const scriptsForFile = `
@@ -1406,37 +1580,46 @@ resultsContainer.innerHTML = tableHTML;
         `;
 
         const cleanHTMLContent = `
-            <!DOCTYPE html>
-            <html lang="he" dir="rtl">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
-                <title>${dynamicHeader}</title>
-                <style>
-                    ${style}
-                    body { padding: 5px; text-align: center; overflow-x: auto; -webkit-text-size-adjust: 100%; }
-                    .no-print-btn {
-                        background: #673AB7; color: white; border: none;
-                        padding: 16px 20px; border-radius: 12px; font-size: 18px;
-                        font-weight: bold; margin: 10px auto 20px auto; cursor: pointer;
-                        display: block; width: 90%; max-width: 300px;
-                        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-                        -webkit-appearance: none;
-                    }
-                    #results-container {
-                        transition: transform 0.2s ease;
-                        width: 100%;
-                        display: block;
-                    }
-                    #schedule-table { margin-right: 0; margin-left: auto; } /* קיבוע לימין */
-                </style>
-            </head>
-            <body>
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+<title>${dynamicHeader}</title>
+<style>
+${style}
+body { padding: 5px; text-align: center; overflow-x: auto; -webkit-text-size-adjust: 100%; }
+
+/* 🔒 נעילת תאי הליווי בקובץ המיוצא בלבד */
+.assist-cell {
+user-select: none !important;
+-webkit-user-select: none !important;
+cursor: default !important;
+caret-color: transparent !important;
+}
+
+.no-print-btn {
+background: #673AB7; color: white; border: none;
+padding: 16px 20px; border-radius: 12px; font-size: 18px;
+font-weight: bold; margin: 10px auto 20px auto; cursor: pointer;
+display: block; width: 90%; max-width: 300px;
+box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+-webkit-appearance: none;
+}
+#results-container {
+transition: transform 0.2s ease;
+width: 100%;
+display: block;
+}
+#schedule-table { margin-right: 0; margin-left: auto; } /* קיבוע לימין */
+</style>
+</head>
+<body>
                 <h1 class="modern-main-header" style="font-size: 1.5em; padding: 10px;">${dynamicHeader}</h1>
                
                 <button class="no-print-btn" onclick="fitTable()">התאמה למסך הטלפון 📱</button>
 
-                <div id="results-container">${lastRenderedTableHTML}</div>
+                <div id="results-container">${exportTableHTML}</div>
                
                 <script>${scriptsForFile}<\/script>
             </body>
