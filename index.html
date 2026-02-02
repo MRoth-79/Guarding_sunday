@@ -963,8 +963,8 @@ const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
             // **1. יצירת HTML עבור הטבלה המנותחת**
             let tableHTML = '<h3 style="text-align: center;">טבלת משמרות מנותחת</h3>';
            
-            tableHTML += `<p class="file-format-info" style="text-align: center; color: var(--primary-blue);">**הגדרות:** כל המשמרות: 1 עובד למשמרת. **מינימום: ${MIN_REQUIRED} משמרות.**</p>`;
-
+            tableHTML += `<p class="file-format-info" style="text-align: center; color: var(--primary-blue);">**הגדרות:** לילה (22-06): 2 שומרים, שאר המשמרות: 1. **מינימום: ${MIN_REQUIRED} משמרות.**</p>`;
+            
             // יצירת טבלת הנתונים הראשית
             let scheduleTableHTML = '<table id="schedule-table"><thead><tr><th>שעות / יום</th>';
            
@@ -997,7 +997,7 @@ const exceptions = [];
                 const isNight2to6 = rowIndex === NIGHT_SHIFT_2_6_INDEX;
                 const timeSlotDisplay = timeSlotFull.replace(' (Night)', '').replace(' (Assist)', '').replace(' - ', '<br>');
                
-const maxAllowedInShift = 1; // כעת כל המשמרות מוגדרות לאדם אחד בלבד                
+const maxAllowedInShift = (rowIndex === NIGHT_SHIFT_2_6_INDEX || rowIndex === NIGHT_SHIFT_22_2_INDEX) ? 2 : 1; // כעת כל המשמרות מוגדרות לשניים למשמרת לילה                
 
                 const rowClass = isAssistanceShift ? 'red-assistance-shift' : '';
                
@@ -1050,9 +1050,19 @@ dailyCheck[day].add(cleanedName);
                                 allShifts[cleanedName] = (allShifts[cleanedName] || 0) + 1;
                             }
 
-                            // 4. **איסוף לתדירות משמרת 02:00-06:00**
+                            // 4. **איסוף לתדירות משמרת 02:00-06:00 ובדיקת חריגה**
                             if (isNight2to6) {
-                                nightShift2to6Count[cleanedName] = (nightShift2to6Count[cleanedName] || 0) + 1;
+                                const currentNightCount = (nightShift2to6Count[cleanedName] || 0) + 1;
+                                nightShift2to6Count[cleanedName] = currentNightCount;
+                                
+                                if (currentNightCount > MAX_NIGHT_2_6) {
+                                    exceptions.push({
+                                        day: "סיכום שבועי",
+                                        slot: "02:00-06:00",
+                                        name: cleanedName,
+                                        msg: `חריגה: שובץ ${currentNightCount} לילות (המקסימום המותר ל-02:00-06:00 הוא ${MAX_NIGHT_2_6})`
+                                    });
+                                }
                             }
                         }
                     });
@@ -1466,7 +1476,7 @@ let assistanceShiftsDone = new Set(); // **חדש: מעקב אחרי משמרו�
                     const isAssistanceShift = timeSlotFull.includes('(Assist)');
                     const isNightShift = timeSlotFull.includes('(Night)');
                     const isNight2to6 = shiftIndex === NIGHT_SHIFT_2_6_INDEX;
-                    const required = 1;
+                    const required = (shiftIndex === NIGHT_SHIFT_2_6_INDEX || shiftIndex === NIGHT_SHIFT_22_2_INDEX) ? 2 : 1;
                    
                     row.forEach((cellContent, dayIndex) => {
                         const availableNames = cellContent.split(',').filter(name => name.trim().length > 0);
@@ -1557,45 +1567,49 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
                 let shiftsFilledThisIteration = 0;
                
                 // 4. פונקציית ניקוד מורכבת
-// בתוך פונקציית autoSchedule, תחת פונקציית scoreEmployee:
+                // בתוך פונקציית autoSchedule, תחת פונקציית scoreEmployee:
+                function scoreEmployee(name, count, dayIndex, shiftIndex) {
+                    let score = 0;
 
-function scoreEmployee(name, count, dayIndex, shiftIndex) {
-let score = 0;
+                    // --- הוספה: חסימת מכסת לילות 02:00-06:00 (לא יותר מ-2 בשבוע) ---
+                    if (shiftIndex === NIGHT_SHIFT_2_6_INDEX && (nightShift2to6Count[name] || 0) >= MAX_NIGHT_2_6) {
+                        return -3000000; // ציון שלילי גבוה מאוד שמונע מהרובוט לבחור בשומר זה
+                    }
 
-// הגדרת יעד אישי
-let personalTarget = guardsFor5Set.has(name) ? 5 : MIN_REQUIRED;
+                    // הגדרת יעד אישי
+                    let personalTarget = guardsFor5Set.has(name) ? 5 : MIN_REQUIRED;
 
-// 1. עדיפות קריטית למי שטרם הגיע ליעד שלו (ובמיוחד לאלו של 5-6 משמרות)
-if (count < personalTarget) {
-// בונוס משמעותי שמבטיח שהם ייבחרו לפני אחרים
-score += 5000 * (personalTarget - count);
-}
+                    // 1. עדיפות קריטית למי שטרם הגיע ליעד שלו (ובמיוחד לאלו של 5-6 משמרות)
+                    if (count < personalTarget) {
+                        // בונוס משמעותי שמבטיח שהם ייבחרו לפני אחרים
+                        score += 5000 * (personalTarget - count);
+                    }
 
-// 2. עדיפות משנית למי ששמר פחות באופן כללי (לאיזון)
-score += (MAX_ALLOWED - count) * 10;
+                    // 2. עדיפות משנית למי ששמר פחות באופן כללי (לאיזון)
+                    score += (MAX_ALLOWED - count) * 10;
 
-// --- חסימות קריטיות (עונשים כבדים מאוד - מונעים שיבוץ לא חוקי) ---
+                    // --- חסימות קריטיות (עונשים כהבדים מאוד - מונעים שיבוץ לא חוקי) ---
 
-// חסימת כפילות יומית או הפרת מנוחת 8 שעות (חובה!)
-if (dailyOccupancy[dayIndex].has(name) || daily8HourBreakRequired[dayIndex].has(name)) {
-return -1000000;
-}
+                    // חסימת כפילות יומית או הפרת מנוחת 8 שעות (חובה!)
+                    if (dailyOccupancy[dayIndex].has(name) || daily8HourBreakRequired[dayIndex].has(name)) {
+                        return -1000000;
+                    }
 
-// חסימות מנוחת לילה (החוקים הקשיחים שלך)
-if (night22_02_block[dayIndex].has(name) && (shiftIndex === MORNING_SHIFT_6_10_INDEX || shiftIndex === MORNING_SHIFT_10_14_INDEX)) {
-return -2000000;
-}
-if (night02_06_block[dayIndex].has(name) && (shiftIndex <= AFTERNOON_SHIFT_14_18_INDEX)) {
-return -2000000;
-}
+                    // חסימות מנוחת לילה (החוקים הקשיחים שלך)
+                    if (night22_02_block[dayIndex].has(name) && (shiftIndex === MORNING_SHIFT_6_10_INDEX || shiftIndex === MORNING_SHIFT_10_14_INDEX)) {
+                        return -2000000;
+                    }
+                    if (night02_06_block[dayIndex].has(name) && (shiftIndex <= AFTERNOON_SHIFT_14_18_INDEX)) {
+                        return -2000000;
+                    }
 
-// הגבלת מכסת מקסימום אבסולוטית (5)
-if (count >= MAX_ALLOWED) {
-return -500000;
-}
+                    // הגבלת מכסת מקסימום אבסולוטית (5)
+                    if (count >= MAX_ALLOWED) {
+                        return -500000;
+                    }
 
-return score;
-}
+                    return score;
+                }
 
                 // 5. מילוי המשמרות החסרות
                 // --- מילוי המשמרות החסרות (לוגיקה מעודכנת בשני סבבים) ---
@@ -1604,7 +1618,7 @@ return score;
                 function fillShiftLogic(shift, onlyGuardsFor5) {
                     const { dayIndex, shiftIndex, requiredCount } = shift;
                     const isNightShift = EXPECTED_TIME_SLOTS[shiftIndex].includes('(Night)');
-                    const maxInShift = 1;
+                    const maxInShift = (shiftIndex === NIGHT_SHIFT_2_6_INDEX || shiftIndex === NIGHT_SHIFT_22_2_INDEX) ? 2 : 1;
                    
                     // אם המשמרת כבר התמלאה בסבב הקודם, דלג
                     if (newScheduleData[shiftIndex][dayIndex].length >= maxInShift) {
