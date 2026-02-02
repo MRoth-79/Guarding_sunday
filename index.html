@@ -854,159 +854,13 @@ document.getElementById('googleSheetUrl').value = savedUrl;
         }
 
 
-		function escapeHtml(s) {
-			return String(s).replace(/[&<>"']/g, m => (
-		{ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
-		));
-		}
+function escapeHtml(s) {
+return String(s).replace(/[&<>"']/g, m => (
+{ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
+));
+}
 
-		/* === ליווי 07:40 – שמירה/טעינה לפי תאריך יום ראשון === */
-		function getAssistWeekKey() {
-		const startDateString = document.getElementById('startDate').value || 'no-date';
-		return 'assist_0740__' + startDateString; // מפתח ייחודי לשבוע
-		}
 
-		function loadAssistArray() {
-		try {
-			const raw = localStorage.getItem(getAssistWeekKey());
-			const arr = raw ? JSON.parse(raw) : null;
-			return Array.isArray(arr) && arr.length === 7 ? arr : Array(7).fill('');
-		} catch (e) {
-			return Array(7).fill('');
-		}
-		}
-
-		function saveAssistArray(arr) {
-		try {
-			localStorage.setItem(getAssistWeekKey(), JSON.stringify(arr));
-		} catch (e) {
-			console.warn('Failed saving assist data', e);
-		}
-		}
-
-		/* === יצירת בועות שמות עם colorMap === */
-		function toNameArray(str) {
-		return String(str || '')
-			.split(/[,\n]/)
-			.map(n => n.trim())
-			.filter(n => n.length > 0);
-		}
-
-		function renderPersonBubbles(namesArray, dayLabel, timeSlotTitle) {
-		return (namesArray || []).map(raw => {
-			const clean = raw.trim();
-			const safeName = escapeHtml(clean);
-			const key = clean.includes(' ') ? clean.replace(' ', '_') : clean;
-			const className = colorMap[key] ? `person ${colorMap[key]}` : 'person';
-			const safeTitle = `${safeName} - ${escapeHtml(dayLabel)}, ${escapeHtml(timeSlotTitle)}`;
-			return `<span class="${className}" title="${safeTitle}">${safeName}</span>`;
-		}).join('');
-		}
-
-		/* === המרת הקלדה לבועות בליווי === */
-		const KNOWN_NAMES = Object.keys(colorMap).map(k => k.includes('_') ? k.replace('_', ' ') : k);
-
-		function splitToTokens(text) {
-		return String(text || '')
-			.split(/[,\n]/)
-			.map(s => s.trim())
-			.filter(Boolean);
-		}
-
-		function placeCaretAtEnd(el) {
-		try {
-			el.focus();
-			const range = document.createRange();
-			range.selectNodeContents(el);
-			range.collapse(false);
-			const sel = window.getSelection();
-			sel.removeAllRanges();
-			sel.addRange(range);
-		} catch {}
-		}
-
-		// מוסיף מפריד אחרי ההמרה כדי שתוכל להמשיך להקליד מיד (אפשר ', ' או ' ')
-		function appendSeparatorAndFocus(cell, sep = ', ') {
-		const lastNode = cell.lastChild;
-		const needsSep =
-			!lastNode ||
-			(lastNode.nodeType === Node.TEXT_NODE && !/\s$/.test(lastNode.textContent)) ||
-			(lastNode.nodeType !== Node.TEXT_NODE);
-
-		if (needsSep) {
-			cell.appendChild(document.createTextNode(sep));
-		}
-		placeCaretAtEnd(cell);
-		}
-
-		// המרה: שומרת בועות קיימות + ממירה שמות חדשים לבועות, משאירה לא מזוהים כטקסט
-		function convertAssistCellToBubbles(cell) {
-		const dayIdx = parseInt(cell.dataset.dayIndex, 10) || 0;
-		const dayName = cell.dataset.dayName || '';
-
-		// 1) אוספים שמות שכבר בועות
-		const existing = Array.from(cell.querySelectorAll('.person'))
-			.map(el => el.textContent.trim())
-			.filter(Boolean);
-
-		// 2) טקסט חופשי ללא הבועות
-		const clone = cell.cloneNode(true);
-		clone.querySelectorAll('.person').forEach(el => el.remove());
-		const freeText = clone.innerText;
-
-		// 3) מפרקים ומזהים
-		const tokens = splitToTokens(freeText);
-		const matchedSet = new Set(existing);
-		const leftovers = [];
-
-		tokens.forEach(tok => {
-			if (!tok) return;
-			if (KNOWN_NAMES.includes(tok)) matchedSet.add(tok);
-			else leftovers.push(tok);
-		});
-
-		const matched = Array.from(matchedSet);
-
-		// 4) בניית התוכן בתא
-		const bubblesHTML = renderPersonBubbles(matched, dayName, 'ליווי 07:40');
-		const leftoverText = leftovers.join(', ');
-		cell.innerHTML = bubblesHTML + (leftoverText ? (' ' + escapeHtml(leftoverText)) : '');
-
-		// 5) שמירת השמות המוכרים לשבוע
-		const arr = loadAssistArray();
-		arr[dayIdx] = matched.join(', ');
-		saveAssistArray(arr);
-
-		placeCaretAtEnd(cell);
-		}
-
-		// חיבור מאזינים לתאי ליווי (Enter/פסיק/blur/paste)
-		function setupAssistEditors() {
-		document.querySelectorAll('.assist-cell[contenteditable="true"]').forEach(cell => {
-			cell.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') {
-				e.preventDefault();
-				e.stopPropagation();
-				convertAssistCellToBubbles(cell);
-				appendSeparatorAndFocus(cell, ', ');
-			} else if (e.key === ',') {
-				e.preventDefault();
-				e.stopPropagation();
-				convertAssistCellToBubbles(cell);
-				appendSeparatorAndFocus(cell, ' ');
-			}
-			});
-
-			cell.addEventListener('blur', () => convertAssistCellToBubbles(cell));
-
-			cell.addEventListener('paste', () => {
-			setTimeout(() => {
-				convertAssistCellToBubbles(cell);
-				appendSeparatorAndFocus(cell, ' ');
-			}, 0);
-			});
-		});
-		}
         /**
          * פונקציה לניקוי אגרסיבי של שורה מתווים בלתי נראים וריווח (נשארת זהה)
          */
@@ -1018,7 +872,7 @@ document.getElementById('googleSheetUrl').value = savedUrl;
          * פונקציה לעיבוד טקסט עם חלוקה אנכית לפי ימים (נשארת זהה)
          */
         function parseVerticalText(text) {
-            const lines = text.split(/\r?\n|\r/); 
+            const lines = text.split(/\r?\n|\r/);
             const rawDayData = {};
             let currentDay = null;
            
@@ -1042,20 +896,20 @@ document.getElementById('googleSheetUrl').value = savedUrl;
                     currentDay = dayMatch;
                     rawDayData[currentDay] = [];
                 } else if (currentDay) {
-                    const parts = line.split(/\s{2,}|\t/).map(p => p.trim()); 
+                    const parts = line.split(/\s{2,}|\t/).map(p => p.trim());
                     const timeSlotString = parts[0];
                    
                     const isTimeSlot = Object.keys(timeSlotCheckMap).some(timePart => timeSlotString && timeSlotString.startsWith(timePart));
                     const isAssistanceSlot = timeSlotString === 'ליווי 07:40';
 
-			if (parts.length > 0 && isTimeSlot) {
-			const potentialNames = parts.slice(1);
-			const names = potentialNames.filter(name => name.length > 0).map(name => name.trim());
-			rawDayData[currentDay].push(names.join(','));
-			} 
-			else if (isAssistanceSlot) {
-			}
-			
+if (parts.length > 0 && isTimeSlot) {
+const potentialNames = parts.slice(1);
+const names = potentialNames.filter(name => name.length > 0).map(name => name.trim());
+rawDayData[currentDay].push(names.join(','));
+} else if (isAssistanceSlot) {
+// מתעלמים ממשמרת ליווי בשלב הניתוח כדי לשמור על 6 משמרות/יום
+}
+``
                 }
             });
 
@@ -1065,7 +919,7 @@ document.getElementById('googleSheetUrl').value = savedUrl;
                 return { error: 'לא נמצאו נתונים תקינים או שלא זוהו ימים בפורמט נכון. ודא שהנתונים מתחילים ב"יום ראשון".' };
             }
 
-            const scheduleTable = []; 
+            const scheduleTable = [];
             for (let i = 0; i < EXPECTED_TIME_SLOTS.length; i++) {
                 const row = [];
                 for (let j = 0; j < EXPECTED_DAYS.length; j++) {
@@ -1074,7 +928,7 @@ document.getElementById('googleSheetUrl').value = savedUrl;
                    
                     if (!dayShifts) {
                            return { error: `שגיאה: יום **${day}** חסר לחלוטין בנתונים.` };
-                    } 
+                    }
                    
                     if (dayShifts.length !== EXPECTED_TIME_SLOTS.length) {
                         return { error: `שגיאה ביום **${day}**: נמצאו רק ${dayShifts?.length || 0} משמרות במקום ${EXPECTED_TIME_SLOTS.length} משמרות. יש לתקן את כמות השורות ביום זה.` };
@@ -1120,7 +974,7 @@ const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
             let tableHTML = '<h3 style="text-align: center;">טבלת משמרות</h3>';
            
             tableHTML += `<p class="file-format-info" style="text-align: center; color: var(--primary-blue);">**הגדרות:** לילה (22-06): 2 שומרים, שאר המשמרות: 1. **מינימום: ${MIN_REQUIRED} משמרות.**</p>`;
-            
+           
             // יצירת טבלת הנתונים הראשית
             let scheduleTableHTML = '<table id="schedule-table"><thead><tr><th>שעות / יום</th>';
            
@@ -1139,37 +993,17 @@ const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
 
             // סגירת שורת הכותרת ותחילת גוף הטבלה
             scheduleTableHTML += '</tr></thead><tbody>';
-			
-			/* --- שורת הליווי 07:40 (עריכה חיה) --- */
-			const assistValues = loadAssistArray(); // מערך באורך 7 (א׳→שבת)
-			scheduleTableHTML += `
-			<tr class="red-assistance-shift">
-				<td class="time-slot" title="ליווי 07:40">ליווי 07:40</td>
-				${dayHeaders.map((day, dayIdx) => {
-				const namesArr = toNameArray(assistValues[dayIdx] || '');
-				const bubbles = renderPersonBubbles(namesArr, day, 'ליווי 07:40');
-				return `
-					<td class="assist-cell"
-						contenteditable="true"
-						data-day-index="${dayIdx}"
-						data-day-name="${escapeHtml(day)}"
-						data-assist-type="0740"
-						title="${escapeHtml(day)} - ליווי 07:40">
-					${bubbles}
-					</td>`;
-				}).join('')}
-			</tr>
-			`;	
+
            
             const allShifts = {};
-            const nightShift2to6Count = {}; 
+            const nightShift2to6Count = {};
             const dailyCheck = {};
 const exceptions = [];
            
             scheduleData.forEach((row, rowIndex) => {
                 const timeSlotFull = EXPECTED_TIME_SLOTS[rowIndex];
                 const isNightShift = timeSlotFull.includes('(Night)');
-                const isAssistanceShift = timeSlotFull.includes('(Assist)'); 
+                const isAssistanceShift = timeSlotFull.includes('(Assist)');
                 const isNight2to6 = rowIndex === NIGHT_SHIFT_2_6_INDEX;
                 const timeSlotDisplay = timeSlotFull.replace(' (Night)', '').replace(' (Assist)', '').replace(' - ', '<br>');
                
@@ -1230,7 +1064,7 @@ dailyCheck[day].add(cleanedName);
                             if (isNight2to6) {
                                 const currentNightCount = (nightShift2to6Count[cleanedName] || 0) + 1;
                                 nightShift2to6Count[cleanedName] = currentNightCount;
-                                
+                               
                                 if (currentNightCount > MAX_NIGHT_2_6) {
                                     exceptions.push({
                                         day: "סיכום שבועי",
@@ -1382,7 +1216,7 @@ ${flag}${formattedNames} ${warningText}
             scheduleTableHTML += '</tbody></table>';
            
             // **2. שמירת ה-HTML של הטבלה למשתנה גלובלי**
-            lastRenderedTableHTML = scheduleTableHTML; 
+            lastRenderedTableHTML = scheduleTableHTML;
            
             // **3. המשך יצירת טבלת הסיכום והצגה**
             tableHTML += scheduleTableHTML + '<hr>';
@@ -1390,7 +1224,7 @@ ${flag}${formattedNames} ${warningText}
 //////////////////////////////////////////////////////////////////////////////////////////////
            
             // יצירת טבלת הסיכום
-            let summaryTableHTML = `<h3>סיכום תדירות הופעה של כל עובד (מינימום: ${MIN_REQUIRED}, מקסימום: ${MAX_ALLOWED}) - ללא משמרות ליווי</h3>`; 
+            let summaryTableHTML = `<h3>סיכום תדירות הופעה של כל עובד (מינימום: ${MIN_REQUIRED}, מקסימום: ${MAX_ALLOWED}) - ללא משמרות ליווי</h3>`;
             summaryTableHTML += `
 <table id="summary-table">
 <thead>
@@ -1422,8 +1256,8 @@ return a.localeCompare(b, 'he');
                
                 let rowClass = '';
                 let statusText = '';
-                let night2to6Status = night2to6Count > MAX_NIGHT_2_6 ? 
-                    `<span class="night-limit-fail">❌ ${night2to6Count}</span>` : 
+                let night2to6Status = night2to6Count > MAX_NIGHT_2_6 ?
+                    `<span class="night-limit-fail">❌ ${night2to6Count}</span>` :
                     `<span class="night-limit-ok">✅ ${night2to6Count}</span>`;
 
 
@@ -1458,7 +1292,7 @@ msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MA
                         <td style="text-align: center;">${counter++}</td>
                         <td>${name}</td>
                         <td style="text-align: center;">${count}</td>
-                        <td style="text-align: center;">${night2to6Status}</td> 
+                        <td style="text-align: center;">${night2to6Status}</td>
                         <td style="text-align: center;">${statusText}</td>
                     </tr>
                 `;
@@ -1467,44 +1301,43 @@ msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MA
             summaryTableHTML += '</tbody></table>';
            
 
-		// --- בניית טבלת החריגות (מעל הסיכום) ---
-		let exceptionsTableHTML = `
-		<div style="text-align: center; margin-top: 20px;">
-		<h3 id="exceptions-header">⚠️ ריכוז חריגות ואזהרות</h3>
-		</div>
-		<table id="exceptions-table">
-		<thead>
-		<tr>
-		<th>יום</th>
-		<th>משמרת</th>
-		<th>עובד</th>
-		<th>פירוט החריגה</th>
-		</tr>
-		</thead>
-		<tbody>`;
+// --- בניית טבלת החריגות (מעל הסיכום) ---
+let exceptionsTableHTML = `
+<div style="text-align: center; margin-top: 20px;">
+<h3 id="exceptions-header">⚠️ ריכוז חריגות ואזהרות</h3>
+</div>
+<table id="exceptions-table">
+<thead>
+<tr>
+<th>יום</th>
+<th>משמרת</th>
+<th>עובד</th>
+<th>פירוט החריגה</th>
+</tr>
+</thead>
+<tbody>`;
 
-		if (exceptions.length === 0) {
-		exceptionsTableHTML += `<tr><td colspan="4">אין חריגות בסידור! ✅</td></tr>`;
-		} else {
-		exceptions.forEach(ex => {
-		exceptionsTableHTML += `<tr>
-		<td>${ex.day}</td>
-		<td>${ex.slot}</td>
-		<td><b>${ex.name}</b></td>
-		<td>${ex.msg}</td>
-		</tr>`;
-		});
-		}
-		exceptionsTableHTML += `</tbody></table><hr>`;
+if (exceptions.length === 0) {
+exceptionsTableHTML += `<tr><td colspan="4">אין חריגות בסידור! ✅</td></tr>`;
+} else {
+exceptions.forEach(ex => {
+exceptionsTableHTML += `<tr>
+<td>${ex.day}</td>
+<td>${ex.slot}</td>
+<td><b>${ex.name}</b></td>
+<td>${ex.msg}</td>
+</tr>`;
+});
+}
+exceptionsTableHTML += `</tbody></table><hr>`;
 
-		// --- החיבור הסופי לפי הסדר המבוקש ---
-		// קודם כל הטבלה הראשית שכבר נמצאת בתוך tableHTML
-		// עכשיו מוסיפים את החריגות, ורק אז את הסיכום
-		tableHTML += exceptionsTableHTML + summaryTableHTML;
+// --- החיבור הסופי לפי הסדר המבוקש ---
+// קודם כל הטבלה הראשית שכבר נמצאת בתוך tableHTML
+// עכשיו מוסיפים את החריגות, ורק אז את הסיכום
+tableHTML += exceptionsTableHTML + summaryTableHTML;
 
-		// הצגת התוצאה הסופית במסך
-		resultsContainer.innerHTML = tableHTML;
-			setupAssistEditors();
+// הצגת התוצאה הסופית במסך
+resultsContainer.innerHTML = tableHTML;
         }
 
 
@@ -1528,13 +1361,6 @@ msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MA
         const format = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
         const dynamicHeader = `טבלת משמרות ${format(dateSun)} - ${format(dateSat)}`;
         const style = document.querySelector('style').textContent;
-
-		// --- 🔒 נעילת עריכת הליווי בקובץ המיוצא: מסירים contenteditable ותכונות data-* ---
-		let exportTableHTML = lastRenderedTableHTML
-		.replace(/contenteditable="true"/g, 'contenteditable="false"')
-		.replace(/ data-day-index="[^"]*"/g, '')
-		.replace(/ data-day-name="[^"]*"/g, '')
-		.replace(/ data-assist-type="[^"]*"/g, '');
 
         // --- קוד מתוקן שעובד ב-100% בנייד ---
         const scriptsForFile = `
@@ -1567,8 +1393,8 @@ msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MA
                 }
 
                 // חישוב רוחב המסך לעומת רוחב הטבלה האמיתי
-                const screenWidth = document.documentElement.clientWidth - 20; 
-                const tableWidth = table.scrollWidth; 
+                const screenWidth = document.documentElement.clientWidth - 20;
+                const tableWidth = table.scrollWidth;
 
                 if (tableWidth > screenWidth) {
                     const scale = screenWidth / tableWidth;
@@ -1580,52 +1406,43 @@ msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MA
         `;
 
         const cleanHTMLContent = `
-			<!DOCTYPE html>
-			<html lang="he" dir="rtl">
-			<head>
-				<meta charset="UTF-8">
-				<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
-				<title>${dynamicHeader}</title>
-				<style>
-				${style}
-				body { padding: 5px; text-align: center; overflow-x: auto; -webkit-text-size-adjust: 100%; }
-
-				/* 🔒 נעילת תאי הליווי בקובץ המיוצא בלבד */
-				.assist-cell {
-					user-select: none !important;
-					-webkit-user-select: none !important;
-					cursor: default !important;
-					caret-color: transparent !important;
-				}
-
-				.no-print-btn { 
-					background: #673AB7; color: white; border: none; 
-					padding: 16px 20px; border-radius: 12px; font-size: 18px; 
-					font-weight: bold; margin: 10px auto 20px auto; cursor: pointer;
-					display: block; width: 90%; max-width: 300px;
-					box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-					-webkit-appearance: none;
-				}
-				#results-container { 
-					transition: transform 0.2s ease; 
-					width: 100%; 
-					display: block;
-				}
-				#schedule-table { margin-right: 0; margin-left: auto; } /* קיבוע לימין */
-				</style>
-			</head>
-			<body>
+            <!DOCTYPE html>
+            <html lang="he" dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+                <title>${dynamicHeader}</title>
+                <style>
+                    ${style}
+                    body { padding: 5px; text-align: center; overflow-x: auto; -webkit-text-size-adjust: 100%; }
+                    .no-print-btn {
+                        background: #673AB7; color: white; border: none;
+                        padding: 16px 20px; border-radius: 12px; font-size: 18px;
+                        font-weight: bold; margin: 10px auto 20px auto; cursor: pointer;
+                        display: block; width: 90%; max-width: 300px;
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                        -webkit-appearance: none;
+                    }
+                    #results-container {
+                        transition: transform 0.2s ease;
+                        width: 100%;
+                        display: block;
+                    }
+                    #schedule-table { margin-right: 0; margin-left: auto; } /* קיבוע לימין */
+                </style>
+            </head>
+            <body>
                 <h1 class="modern-main-header" style="font-size: 1.5em; padding: 10px;">${dynamicHeader}</h1>
-                
+               
                 <button class="no-print-btn" onclick="fitTable()">התאמה למסך הטלפון 📱</button>
 
-                <div id="results-container">${exportTableHTML}</div>
-                
+                <div id="results-container">${lastRenderedTableHTML}</div>
+               
                 <script>${scriptsForFile}<\/script>
             </body>
             </html>
         `;
-        
+       
         const bom = '\ufeff';
         const blob = new Blob([bom + cleanHTMLContent], { type: 'text/html;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -1665,7 +1482,7 @@ rc.appendChild(p);
 
             const allEmployees = Object.keys(colorMap).map(key => key.includes('_') ? key.replace('_', ' ') : key);
             let employeeShiftsCount = {};
-            let nightShift2to6Count = {}; 
+            let nightShift2to6Count = {};
             let newScheduleData = initialParsedData.data.map(row => row.map(cell => []));
             let nightToMorningCheck = initialParsedData.days.map(() => new Set());
             let dailyOccupancy = initialParsedData.days.map(() => new Set());
@@ -1682,7 +1499,7 @@ rc.appendChild(p);
                 });
                
                 // איפוס סטים יומיים
-                nightToMorningCheck = initialParsedData.days.map(() => new Set()); 
+                nightToMorningCheck = initialParsedData.days.map(() => new Set());
                 dailyOccupancy = initialParsedData.days.map(() => new Set());
                 daily8HourBreakRequired = initialParsedData.days.map(() => new Set());
                 availabilityMap = {};
@@ -2192,7 +2009,7 @@ document.getElementById("analyzeButton").click();
 function fitTableToPage() {
     const container = document.getElementById('results-container');
     const table = document.getElementById('schedule-table');
-    
+   
     if (!table) return;
 
     // אם כבר הופעל כיווץ, נחזיר למצב רגיל בלחיצה חוזרת
