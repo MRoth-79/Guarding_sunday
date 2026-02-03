@@ -1953,7 +1953,7 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
                 msg.querySelector('p').textContent = `⚠️ סידור הסתיים. ${finalBelowMin.length} עובדים עדיין מתחת למינימום ${MIN_REQUIRED}: ${namesList}. נדרשת השלמה ידנית/בדיקת זמינות.`;
                 msg.style.backgroundColor = '#ff9800'; // כתום לאזהרה
             }
-
+            
             msg.style.display = 'block';
             setTimeout(() => {
                 msg.style.display = 'none';
@@ -1961,13 +1961,13 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
         }
 
         /**
-        * פונקציה חדשה להורדת הנתונים המנותחים (טבלת המשמרות הסופית) כקובץ CSV.
+        * פונקציה חדשה להורדת הנתונים המנותחים (טבלת המשמרות ) כקובץ CSV.
         * כולל תיקון "sep=\t" לפתרון בעיות יישור באקסל (אופיס/עברית).
         */
         function downloadCsvFile() {
         const textContent = document.getElementById('dataToAnalyze').value;
         const startDateString = document.getElementById('startDate').value;
-        const parsedData = parseVerticalText(textContent); // מנתח את הנתונים הנוכחיים
+        const parsedData = parseVerticalText(textContent); //  מנתח את הנתונים הנוכחיים
 
         if (parsedData.error || !textContent.trim()) {
         alert('❌ לא נמצאו נתונים תקינים או שאין נתונים כלל. נתח/סדר אוטומטי תחילה.');
