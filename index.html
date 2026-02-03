@@ -339,6 +339,13 @@ filter: brightness(1.05);
   }
 }
 
+/* כשמצב זרקור פעיל, כל מי שלא נבחר נחלש משמעותית */
+.spotlight-active .person:not(.highlight-name) {
+    opacity: 0.45 !important;
+    filter: grayscale(50%) blur(0px); /* טשטוש קל עוזר לעין להתמקד בנבחר */
+    transition: all 0.3s ease; /* אנימציה חלקה של כניסה לשקיפות */
+}
+
 .spotlight-active .person:hover:not(.highlight-name) {
 transform: none;
 }
@@ -1507,153 +1514,158 @@ setupAssistEditors();
          * פונקציה מעודכנת להורדת קובץ HTML שמכיל רק את הטבלה המעוצבת - כולל תאריכים
          */
         function downloadHtmlTable() {
-        const startDateString = document.getElementById('startDate').value;
-        const resultsHTML = document.getElementById('results-container').innerHTML;
+    const startDateString = document.getElementById('startDate').value;
+    const resultsHTML = document.getElementById('results-container').innerHTML;
 
-        if (!startDateString || !resultsHTML || resultsHTML.includes('הטעינה הראשונית')) {
-            alert('יש לבחור תאריך ולבצע ניתוח נתונים לפני ההורדה!');
-            return;
-        }
-
-        const [year, month, day] = startDateString.split('-');
-        const dateSun = new Date(year, month - 1, day);
-        const dateSat = new Date(dateSun);
-        dateSat.setDate(dateSun.getDate() + 6);
-
-        const format = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const dynamicHeader = `טבלת משמרות ${format(dateSun)} - ${format(dateSat)}`;
-        const style = document.querySelector('style').textContent;
-
-// --- 🔒 נעילת עריכת הליווי בקובץ המיוצא: מסירים contenteditable ותכונות data-* ---
-let exportTableHTML = lastRenderedTableHTML
-.replace(/contenteditable="true"/g, 'contenteditable="false"')
-.replace(/ data-day-index="[^"]*"/g, '')
-.replace(/ data-day-name="[^"]*"/g, '')
-.replace(/ data-assist-type="[^"]*"/g, '');
-
-        // --- קוד מתוקן שעובד ב-100% בנייד ---
-const scriptsForFile = `
-// הדגשת שם בלחיצה (נשאר כרגיל)
-document.addEventListener('click', function (e) {
-const personEl = e.target.closest('.person');
-if (personEl) {
-const name = personEl.textContent.trim();
-const isHighlighted = personEl.classList.contains('highlight-name');
-document.querySelectorAll('.person').forEach(el => el.classList.remove('highlight-name'));
-if (!isHighlighted) {
-document.querySelectorAll('.person').forEach(el => {
-if (el.textContent.trim() === name) el.classList.add('highlight-name');
-});
-}
-} else {
-document.querySelectorAll('.person').forEach(el => el.classList.remove('highlight-name'));
-}
-});
-
-// כיווץ אוטומטי למסך בעת פתיחה/סיבוב
-function autoFitTable() {
-const container = document.getElementById('results-container');
-const table = document.getElementById('schedule-table');
-if (!container || !table) return;
-
-// איפוס לפני מדידה
-container.style.transformOrigin = 'top right'; // RTL
-container.style.transform = 'scale(1)';
-container.style.width = '100%';
-
-const screenWidth = document.documentElement.clientWidth - 12; // מרווח קטן
-const tableWidth  = table.scrollWidth;
-
-if (tableWidth > screenWidth) {
-const scale = screenWidth / tableWidth;
-container.style.transform = 'scale(' + scale + ')';
-container.style.width = (100 / scale) + '%'; // מונע חיתוך ימני
-}
-}
-
-// הפעלה בטעינה ובשינוי גודל/סיבוב
-window.addEventListener('DOMContentLoaded', autoFitTable);
-window.addEventListener('load', autoFitTable);
-window.addEventListener('resize', function() {
-clearTimeout(window.__autoFitTO__);
-window.__autoFitTO__ = setTimeout(autoFitTable, 150);
-});
-`;
-
-        const cleanHTMLContent = `
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
-<title>${dynamicHeader}</title>
-<style>
-${style}
-body { padding: 5px; text-align: center; overflow-x: auto; -webkit-text-size-adjust: 100%; }
-
-html, body { width: 100%; overflow-x: hidden; } /* מונע פס גלילה רוחבי אחרי scale */
-
-/* 🔒 נעילת תאי הליווי בקובץ המיוצא בלבד */
-.assist-cell {
-user-select: none !important;
--webkit-user-select: none !important;
-cursor: default !important;
-caret-color: transparent !important;
-}
-
-#results-container {
-transition: transform 0.2s ease;
-width: 100%;
-display: block;
-}
-
-#schedule-table { margin-right: 0; margin-left: auto; } /* קיבוע לימין */
-</style>
-</head>
-<body>
-                <h1 class="modern-main-header" style="font-size: 1.5em; padding: 10px;">${dynamicHeader}</h1>
-
-                <div id="results-container">${exportTableHTML}</div>
-               
-                <script>${scriptsForFile}<\/script>
-            </body>
-            </html>
-        `;
-       
-        const bom = '\ufeff';
-        const blob = new Blob([bom + cleanHTMLContent], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `sidur_${startDateString}.html`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+    if (!startDateString || !resultsHTML || resultsHTML.includes('הטעינה הראשונית')) {
+        alert('יש לבחור תאריך ולבצע ניתוח נתונים לפני ההורדה!');
+        return;
     }
 
-        // פונקציה חדשה לסידור אוטומטי של המשמרות - עם אילוצים מעודכנים
-        function autoSchedule() {
-const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
-const guardsFor5Set = new Set(guardsFor5Text.split(/[,\n]/).map(name => name.trim()).filter(name => name !== ''));
-            const textContent = document.getElementById('dataToAnalyze').value;
-            const startDateString = document.getElementById('startDate').value;
+    const [year, month, day] = startDateString.split('-');
+    const dateSun = new Date(year, month - 1, day);
+    const dateSat = new Date(dateSun);
+    dateSat.setDate(dateSun.getDate() + 6);
 
-            if (!startDateString) {
-                alert('אנא בחר תאריך התחלה (יום ראשון) לפני הסידור האוטומטי.');
-                return;
+    const format = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const dynamicHeader = `טבלת משמרות ${format(dateSun)} - ${format(dateSat)}`;
+    const style = document.querySelector('style').textContent;
+
+    let exportTableHTML = lastRenderedTableHTML
+        .replace(/contenteditable="true"/g, 'contenteditable="false"')
+        .replace(/ data-day-index="[^"]*"/g, '')
+        .replace(/ data-day-name="[^"]*"/g, '')
+        .replace(/ data-assist-type="[^"]*"/g, '');
+
+    // --- ה-JavaScript של הקובץ המיוצא (כולל ניהול הזרקור) ---
+    const scriptsForFile = `
+        let lockedName = null;
+
+        function updateHighlights(nameToHighlight) {
+            const container = document.getElementById('results-container');
+            if (!container) return;
+
+            if (nameToHighlight) {
+                container.classList.add('spotlight-active');
+            } else {
+                container.classList.remove('spotlight-active');
             }
 
+            const allPersons = container.querySelectorAll('.person');
+            allPersons.forEach(el => {
+                if (nameToHighlight && el.textContent.trim() === nameToHighlight) {
+                    el.classList.add('highlight-name');
+                } else {
+                    el.classList.remove('highlight-name');
+                }
+            });
+        }
 
-            const initialParsedData = parseVerticalText(textContent);
+        document.addEventListener('click', function (e) {
+            const personEl = e.target.closest('.person');
+            if (personEl) {
+                const clickedName = personEl.textContent.trim();
+                lockedName = (lockedName === clickedName) ? null : clickedName;
+            } else if (!e.target.closest('button')) {
+                lockedName = null;
+            }
+            updateHighlights(lockedName);
+        });
 
-            if (initialParsedData.error) {
-const rc = document.getElementById('results-container');
-rc.innerHTML = '';
-const p = document.createElement('p');
-p.id = 'initial-message';
-p.textContent = 'הטעינה הראשונית תפעיל את הניתוח אוטומטית.';
-rc.appendChild(p);
+        function autoFitTable() {
+            const container = document.getElementById('results-container');
+            const table = document.getElementById('schedule-table');
+            if (!container || !table) return;
+            container.style.transformOrigin = 'top right';
+            container.style.transform = 'scale(1)';
+            container.style.width = '100%';
+            const screenWidth = document.documentElement.clientWidth - 12;
+            const tableWidth = table.scrollWidth;
+            if (tableWidth > screenWidth) {
+                const scale = screenWidth / tableWidth;
+                container.style.transform = 'scale(' + scale + ')';
+                container.style.width = (100 / scale) + '%';
+            }
+        }
+        window.addEventListener('load', autoFitTable);
+        window.addEventListener('resize', autoFitTable);
+    `;
+
+    // --- בניית ה-HTML המלא של הקובץ (עם ה-CSS שביקשת) ---
+    const cleanHTMLContent = `
+                <!DOCTYPE html>
+                <html lang="he" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+                    <title>${dynamicHeader}</title>
+                    <style>
+                        ${style}
+                        body { padding: 5px; text-align: center; overflow-x: auto; -webkit-text-size-adjust: 100%; }
+                        html, body { width: 100%; overflow-x: hidden; }
+
+                        /* עיצוב הזרקור עם שקיפות מתונה (0.45) */
+                        .spotlight-active .person:not(.highlight-name) {
+                            opacity: 0.45 !important;
+                            filter: grayscale(30%);
+                            transform: scale(0.98);
+                        }
+
+                        .person.highlight-name {
+                            opacity: 1 !important;
+                            filter: none !important;
+                            transform: scale(1.1) !important;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+                            outline: 2px solid #000;
+                            z-index: 100;
+                        }
+
+                        .assist-cell { user-select: none; cursor: default; }
+                        #results-container { transition: all 0.2s ease; width: 100%; display: block; }
+                        #schedule-table { margin-right: 0; margin-left: auto; }
+                    </style>
+                </head>
+                <body>
+                    <h1 class="modern-main-header" style="font-size: 1.5em; padding: 10px;">${dynamicHeader}</h1>
+                    <div id="results-container">${exportTableHTML}</div>
+                    <script>${scriptsForFile}<\/script>
+                </body>
+                </html>`;
+
+                    const bom = '\ufeff';
+                    const blob = new Blob([bom + cleanHTMLContent], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `sidur_${startDateString}.html`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }
+
+                        // פונקציה חדשה לסידור אוטומטי של המשמרות - עם אילוצים מעודכנים
+                        function autoSchedule() {
+                        const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
+                        const guardsFor5Set = new Set(guardsFor5Text.split(/[,\n]/).map(name => name.trim()).filter(name => name !== ''));
+                            const textContent = document.getElementById('dataToAnalyze').value;
+                            const startDateString = document.getElementById('startDate').value;
+
+                            if (!startDateString) {
+                                alert('אנא בחר תאריך התחלה (יום ראשון) לפני הסידור האוטומטי.');
+                                return;
+                            }
+
+
+                            const initialParsedData = parseVerticalText(textContent);
+
+                            if (initialParsedData.error) {
+                const rc = document.getElementById('results-container');
+                rc.innerHTML = '';
+                const p = document.createElement('p');
+                p.id = 'initial-message';
+                p.textContent = 'הטעינה הראשונית תפעיל את הניתוח אוטומטית.';
+                rc.appendChild(p);
                 return;
             }
 
@@ -2127,14 +2139,12 @@ document.getElementById('quickFetchButton').addEventListener('click', () => fetc
             const container = document.getElementById('results-container');
             if (!container) return;
 
-            // הפעלת מצב זרקור על המיכל (זה יפעיל את ה-CSS)
             if (nameToHighlight) {
                 container.classList.add('spotlight-active');
             } else {
                 container.classList.remove('spotlight-active');
             }
 
-            // סימון השמות הספציפיים
             const allPersons = container.querySelectorAll('.person');
             allPersons.forEach(el => {
                 if (nameToHighlight && el.textContent.trim() === nameToHighlight) {
@@ -2143,23 +2153,29 @@ document.getElementById('quickFetchButton').addEventListener('click', () => fetc
                     el.classList.remove('highlight-name');
                 }
             });
-           
-            // כפייה על הדפדפן בנייד לרנדר מחדש
-            void container.offsetHeight; // force reflow for mobile Safari
         }
 
-        // מאזין לחיצה יחיד וחזק - עובד מעולה בטאץ'
+        // מאזין לחיצה מותאם גם למובייל
         document.addEventListener('click', function (e) {
             const personEl = e.target.closest('.person');
-           
+            
             if (personEl) {
+                // מונע מהדפדפן לבצע פעולות ברירת מחדל של מגע
                 const clickedName = personEl.textContent.trim();
-                lockedName = (lockedName === clickedName) ? null : clickedName;
-            } else if (!e.target.closest('button')) {
-                lockedName = null;
+                
+                if (lockedName === clickedName) {
+                    lockedName = null; // לחיצה שנייה על אותו שם מבטלת
+                } else {
+                    lockedName = clickedName; // בחירת שם חדש
+                }
+            } else {
+                // לחיצה בכל מקום אחר (שאינו כפתור) מבטלת את הבחירה
+                if (!e.target.closest('button') && !e.target.closest('input')) {
+                    lockedName = null;
+                }
             }
             updateHighlights(lockedName);
-        });
+        }); 
 
         // Hover למחשב בלבד (לא ירוץ בטלפון)
         document.addEventListener('mouseover', function (e) {
