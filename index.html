@@ -982,33 +982,43 @@ saveAssistArray(arr);
 placeCaretAtEnd(cell);
 }
 
-// חיבור מאזינים לתאי ליווי (Enter/פסיק/blur/paste)
-function setupAssistEditors() {
-document.querySelectorAll('.assist-cell[contenteditable="true"]').forEach(cell => {
-cell.addEventListener('keydown', (e) => {
-if (e.key === 'Enter') {
-e.preventDefault();
-e.stopPropagation();
-convertAssistCellToBubbles(cell);
-appendSeparatorAndFocus(cell, ', ');
-} else if (e.key === ',') {
-e.preventDefault();
-e.stopPropagation();
-convertAssistCellToBubbles(cell);
-appendSeparatorAndFocus(cell, ' ');
-}
-});
+        // חיבור מאזינים לתאי ליווי (Enter/פסיק/blur/paste)
+        function setupAssistEditors() {
+            document.querySelectorAll('.assist-cell[contenteditable="true"]').forEach(cell => {
+                cell.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // 1. המרת השם שהוקלד לבועה מעוצבת
+                        convertAssistCellToBubbles(cell);
+                        
+                        // 2. הכנת התא להמשך הקלדה (הוספת מפריד ומיקוד)
+                        appendSeparatorAndFocus(cell, ', ');
+                        
+                        // 3. הטריגר המבוקש: הדמיית לחיצה על "נתח נתונים" 🔍
+                        document.getElementById('analyzeButton').click();
+                        
+                    } else if (e.key === ',') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        convertAssistCellToBubbles(cell);
+                        appendSeparatorAndFocus(cell, ' ');
+                        
+                        // אופציונלי: ניתן להוסיף את הקליק גם כאן אם תרצה ניתוח מיידי אחרי פסיק
+                    }
+                });
 
-cell.addEventListener('blur', () => convertAssistCellToBubbles(cell));
+                cell.addEventListener('blur', () => convertAssistCellToBubbles(cell));
 
-cell.addEventListener('paste', () => {
-setTimeout(() => {
-convertAssistCellToBubbles(cell);
-appendSeparatorAndFocus(cell, ' ');
-}, 0);
-});
-});
-}
+                cell.addEventListener('paste', () => {
+                    setTimeout(() => {
+                        convertAssistCellToBubbles(cell);
+                        appendSeparatorAndFocus(cell, ' ');
+                    }, 0);
+                });
+            });
+        }
         /**
          * פונקציה לניקוי אגרסיבי של שורה מתווים בלתי נראים וריווח (נשארת זהה)
          */
