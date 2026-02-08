@@ -2231,14 +2231,24 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
                 if (!response.ok) throw new Error(`שגיאת רשת (${response.status})`);
                
                 const data = await response.text();
-if (!data.trim()) throw new Error("התקבל טקסט ריק מהשרת");
+                if (!data.trim()) throw new Error("התקבל טקסט ריק מהשרת");
 
 
                 dataTextArea.value = data;
-                statusEl.textContent = '✅ נתונים נטענו בהצלחה! מנתח...';
+                statusEl.textContent = '✅ נתונים נטענו בהצלחה! ממלא את טבלת האקסל...';
                 statusEl.style.color = 'green';
-               
-                analyzeButton.click();
+                
+                // שלב חשוב: מלא את גריד האקסל לפי הטקסט שהבאנו
+                if (window.ExcelGrid?.loadFromTextarea) {
+                  ExcelGrid.loadFromTextarea();
+                } else {
+                  console.warn('ExcelGrid.loadFromTextarea() לא נמצא. ודא שהמודול נחשף ל-globals.');
+                }
+                
+                // אופציונלי: גלול לגריד כדי שהמשתמש יראה מיד את התוצאה
+                document.getElementById('excel-input-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // אין ניתוח אוטומטי כאן. המשתמש ילחץ "סדר אוטומטי ↻" בכרטיס האקסל.
 
                 setTimeout(() => { statusEl.style.display = 'none'; }, 5000);
 
@@ -2250,7 +2260,7 @@ if (!data.trim()) throw new Error("התקבל טקסט ריק מהשרת");
             }
         }
 
-// --- פונקציות ניהול כפתורי שומרים (הוספה חדשה) ---
+        // --- פונקציות ניהול כפתורי שומרים (הוספה חדשה) ---
         function generateGuardsButtons() {
             const container = document.getElementById('guardButtonsContainer');
             if (!container) return;
@@ -2291,7 +2301,13 @@ document.getElementById('downloadButton').addEventListener('click', downloadCsvF
         });
        
         document.getElementById('generateLinkButton').addEventListener('click', downloadHtmlTable);
-        document.getElementById('autoScheduleButton').addEventListener('click', autoSchedule);
+        document.getElementById('autoScheduleButton').addEventListener('click', () => {
+          if (window.ExcelGrid?.applyToTextarea) {
+            ExcelGrid.applyToTextarea();
+          }
+          autoSchedule();
+        });
+        ``
         document.getElementById('fetchFromSheetButton').addEventListener('click', fetchFromGoogleSheet);
         document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
         // כפתור "סדר אוטומטי" מתוך גריד האקסל
