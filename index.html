@@ -685,6 +685,128 @@ border-radius: 8px;       /* עיצוב אחיד */
 transition: all 0.2s ease;
 }
 
+/* ===== Excel-like Card ===== */
+.excel-card {
+  background:#fff;
+  border:1px solid var(--border-color);
+  border-radius:12px;
+  box-shadow: var(--shadow);
+  padding:16px;
+  margin:18px 0;
+}
+
+.excel-card-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.excel-card-header .title {
+  font-size:1.1rem;
+  font-weight:800;
+  color:var(--primary-blue);
+}
+
+.excel-card .actions { display:flex; gap:8px; flex-wrap:wrap; }
+
+.excel-btn {
+  background:#eceff1;
+  color:#263238;
+  border:none;
+  border-radius:8px;
+  padding:8px 14px;
+  cursor:pointer;
+  font-weight:600;
+  transition:.2s;
+}
+.excel-btn:hover { filter:brightness(0.97); transform: translateY(-1px); }
+.excel-btn.primary { background: var(--btn-generate); color:#fff; }
+.excel-btn.danger { background: var(--btn-reset); color:#fff; }
+.excel-btn.tertiary { background: #fafafa; border:1px solid var(--border-color); }
+
+.excel-help {
+  background:#fafafa;
+  border:1px dashed var(--border-color);
+  border-radius:8px;
+  padding:10px 14px;
+  margin-bottom:10px;
+  color:#37474f;
+  line-height:1.6;
+}
+
+#excel-grid-wrapper {
+  width:100%;
+  overflow:auto;
+  border:1px solid #e0e0e0;
+  border-radius:10px;
+}
+
+.excel-grid {
+  width:100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing:0;
+  table-layout: fixed;
+  background:#fff;
+}
+
+.excel-grid thead th {
+  position: sticky;
+  top: 0;
+  background: var(--primary-blue);
+  color:#fff;
+  z-index: 2;
+  padding:10px;
+  font-weight:800;
+  font-size:0.95rem;
+  border-bottom:2px solid #78909c;
+}
+
+.excel-grid thead th:first-child {
+  left: 0;
+  z-index: 3;
+}
+
+.excel-grid th, .excel-grid td {
+  border-right:1px solid #e0e0e0;
+  border-bottom:1px solid #eef2f5;
+  padding:8px;
+  vertical-align: middle;
+  overflow:hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.excel-grid tbody td:first-child {
+  position: sticky;
+  left: 0;
+  background: #f6fbff;
+  border-left: 1px solid #e0e0e0;
+  font-weight:700;
+  color:#0D47A1;
+}
+
+.excel-grid tbody tr:nth-child(odd) td { background: #fcfeff; }
+
+.excel-grid td.cell {
+  background:#fff;
+  font-family: inherit;
+  font-size: 14px;
+  direction: rtl;
+}
+
+.excel-grid td.cell[contenteditable="true"] {
+  outline: none;
+  cursor: text;
+}
+
+.excel-grid td.cell:focus {
+  box-shadow: inset 0 0 0 2px rgba(25,118,210,.25);
+  background: #f8fbff;
+}
+
 </style>
 </head>
 <body>
@@ -694,6 +816,35 @@ transition: all 0.2s ease;
        
         <div id="data-source-section">
             <h3>נתוני משמרות לעריכה ומקור הנתונים 📝</h3>
+
+            <!-- ===== Excel-like Input Card (Drop-in) ===== -->
+<div id="excel-input-card" class="excel-card">
+  <div class="excel-card-header">
+    <div class="title">טבלת קלט בסגנון אקסל (הדבקה ישירה)</div>
+    <div class="actions">
+      <button id="btnExcelPasteHelp" type="button" class="excel-btn tertiary">איך להדביק?</button>
+      <button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
+      <button id="btnExcelApplyToText" type="button" class="excel-btn primary">החיל לטקסט ↪︎</button>
+      <button id="btnExcelClear" type="button" class="excel-btn danger">נקה</button>
+    </div>
+  </div>
+
+  <div class="excel-help" id="excelPasteHelp" hidden>
+    <ol>
+      <li>סמן טווח באקסל → העתק → הדבק לתא כאן.</li>
+      <li>הדבקה עם/בלי כותרות נתמכת.</li>
+      <li>לחיצה על "החיל לטקסט" תעדכן את העורך ותבצע ניתוח.</li>
+    </ol>
+  </div>
+
+  <div id="excel-grid-wrapper">
+    <table id="excel-grid" class="excel-grid" dir="rtl"></table>
+  </div>
+
+  <div class="excel-tip">
+    טיפ: פסיק או Enter מפרידים בין שמות.
+  </div>
+</div>
 
 <h3>משיכת נתונים מ-Google Sheet Web App ☁️</h3>
 
@@ -2202,11 +2353,145 @@ document.getElementById('quickFetchButton').addEventListener('click', () => fetc
                 updateHighlights(null);
             }
         });
+/* ============================================================
+   Excel-like Input Grid
+   ============================================================ */
+(function(){
+  const GRID_ID = 'excel-grid';
+  const TXT_ID = 'dataToAnalyze';
+  let matrix = [];
 
+  const dayLabelsFull = EXPECTED_DAYS.slice();
+  const dayLabelsShort = dayLabelsFull.map(d => d.replace('יום ',''));
+  const timeLabels = EXPECTED_TIME_SLOTS.map(s => s.split('(')[0].trim());
+
+  function el(id){ return document.getElementById(id); }
+
+  function buildEmptyMatrix(){
+    matrix = timeLabels.map(_=> dayLabelsFull.map(_=>''));
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function renderGrid(){
+    const table = el(GRID_ID);
+    if (!table) return;
+
+    let thead = '<thead><tr><th>שעות / יום</th>';
+    dayLabelsShort.forEach(d => thead += `<th>${d}</th>`);
+    thead += '</tr></thead>';
+
+    let tbody = '<tbody>';
+    timeLabels.forEach((t,r)=>{
+      tbody += `<tr><td>${t}</td>`;
+      dayLabelsFull.forEach((_,c)=>{
+        const v = escapeHtml(matrix[r][c] || '');
+        tbody += `<td class="cell" contenteditable="true" data-r="${r}" data-c="${c}">${v}</td>`;
+      });
+      tbody += '</tr>';
+    });
+    tbody += '</tbody>';
+    table.innerHTML = thead + tbody;
+  }
+
+  function normalizeCell(s){
+    const raw = String(s||'').replace(/\u00A0/g,' ').trim();
+    const parts = raw.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean);
+    return parts.join(', ');
+  }
+
+  function pullFromDOM(){
+    document.querySelectorAll(`#${GRID_ID} td.cell`).forEach(td=>{
+      matrix[td.dataset.r][td.dataset.c] = normalizeCell(td.innerText);
+    });
+  }
+
+  function parseTableLike(text){
+    const lines = text.replace(/\r/g,'').split('\n');
+    return lines.map(line=>{
+      const useTab = line.split('\t').length >= line.split(',').length;
+      return (useTab ? line.split('\t') : line.split(',')).map(x=>x.trim());
+    });
+  }
+
+  function handlePaste(e){
+    const cell = e.target.closest(`#${GRID_ID} td.cell`);
+    if (!cell) return;
+
+    const text = e.clipboardData?.getData('text/plain');
+    if (!text) return;
+
+    e.preventDefault();
+    const rows = parseTableLike(text);
+    const startR = Number(cell.dataset.r);
+    const startC = Number(cell.dataset.c);
+
+    rows.forEach((arr,r)=>{
+      arr.forEach((val,c)=>{
+        const R = startR + r, C = startC + c;
+        if (R < matrix.length && C < matrix[0].length){
+          matrix[R][C] = normalizeCell(val);
+        }
+      });
+    });
+
+    renderGrid();
+  }
+
+  function loadFromTextarea(){
+    const txt = el(TXT_ID).value;
+    const parsed = parseVerticalText(txt);
+    if (parsed.error){ alert('שגיאה בטעינת הנתונים'); return; }
+
+    buildEmptyMatrix();
+    parsed.data.forEach((row,r)=>{
+      row.forEach((cell,c)=> matrix[r][c] = normalizeCell(cell));
+    });
+    renderGrid();
+  }
+
+  function applyToTextarea(){
+    pullFromDOM();
+    let out = '';
+    dayLabelsFull.forEach((day,i)=>{
+      out += day + '\n';
+      timeLabels.forEach((t,r)=>{
+        out += `${t}\t${matrix[r][i]}\n`;
+      });
+      out += '\n';
+    });
+    el(TXT_ID).value = out.trim();
+    document.getElementById('analyzeButton').click();
+  }
+
+  function clearGrid(){
+    buildEmptyMatrix();
+    renderGrid();
+  }
+
+  function init(){
+    buildEmptyMatrix();
+    renderGrid();
+    el('excel-grid-wrapper').addEventListener('paste', handlePaste);
+    el('btnExcelLoadFromText').onclick = loadFromTextarea;
+    el('btnExcelApplyToText').onclick = applyToTextarea;
+    el('btnExcelClear').onclick = clearGrid;
+    el('btnExcelPasteHelp').onclick = ()=> {
+      const box = el('excelPasteHelp');
+      box.hidden = !box.hidden;
+    };
+  }
+
+  window.ExcelGrid = { init };
+})();
+    
 document.addEventListener("DOMContentLoaded", () => {
-initializeData();
-generateGuardsButtons();  // ← הוספה
-document.getElementById("analyzeButton").click();
+    initializeData();
+    generateGuardsButtons();
+    ExcelGrid.init();
+    document.getElementById("analyzeButton").click();
 });
 
     </script>
