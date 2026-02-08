@@ -26,6 +26,7 @@
     --exception-text: #E65100;
     --saturday-peach: #FFAB91;
     --saturday-bg: #FFF3E0;
+    --spotlight-dim-opacity: 0.2;
 }
 
 body {
@@ -321,6 +322,7 @@ text-shadow: none;
         border: 1px solid rgba(0,0,0,0.03);
         user-select: none;
         -webkit-user-select: none;
+        transition: all 0.3s ease;
 }
 
 .person:hover {
@@ -332,18 +334,18 @@ filter: brightness(1.05);
 /* בנייד: עמעום עדין יותר (20% בלבד) וללא חסימת קליקים */
 @media (pointer: coarse) {
   .spotlight-active .person:not(.highlight-name) {
-    opacity: 0.8 !important;     /* ← 20% שקיפות */
-    filter: none;                 /* בלי להפוך לאפור */
-    transform: none;              /* בלי הקטנה */
-    pointer-events: auto;         /* אפשר להקיש על שם אחר */
+    opacity: calc(var(--spotlight-dim-opacity) + 0.10) !important; /* מעט פחות קיצוני בנייד */
+    filter: none;
+    transform: none;
+    pointer-events: auto;
   }
 }
 
 /* כשמצב זרקור פעיל, כל מי שלא נבחר נחלש משמעותית */
 .spotlight-active .person:not(.highlight-name) {
-    opacity: 0.45 !important;
-    filter: grayscale(50%) blur(0px); /* טשטוש קל עוזר לעין להתמקד בנבחר */
-    transition: all 0.3s ease; /* אנימציה חלקה של כניסה לשקיפות */
+    opacity: var(--spotlight-dim-opacity) !important; /* שקיפות חזקה יותר */
+    filter: grayscale(80%); /* מוסיף אפקט אפור קל כדי להבליט את הנבחר */
+    transition: opacity 0.25s ease, filter 0.25s ease, transform 0.25s ease;
 }
 
 .spotlight-active .person:hover:not(.highlight-name) {
