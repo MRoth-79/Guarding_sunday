@@ -825,6 +825,7 @@ transition: all 0.2s ease;
       <button id="btnExcelPasteHelp" type="button" class="excel-btn tertiary">איך להדביק?</button>
       <button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
       <button id="btnExcelApplyToText" type="button" class="excel-btn primary">החיל לטקסט ↪︎</button>
+      <button id="btnExcelAuto" type="button" class="excel-btn primary">סדר אוטומטי ↻</button>
       <button id="btnExcelClear" type="button" class="excel-btn danger">נקה</button>
     </div>
   </div>
@@ -2292,7 +2293,20 @@ document.getElementById('downloadButton').addEventListener('click', downloadCsvF
         document.getElementById('generateLinkButton').addEventListener('click', downloadHtmlTable);
         document.getElementById('autoScheduleButton').addEventListener('click', autoSchedule);
         document.getElementById('fetchFromSheetButton').addEventListener('click', fetchFromGoogleSheet);
-document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
+        document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
+        // כפתור "סדר אוטומטי" מתוך גריד האקסל
+        document.getElementById('btnExcelAuto')?.addEventListener('click', () => {
+          // שלב 1: סנכרון — מעביר את תוכן הגריד לטקסט בפורמט שה-parser שלך מצפה לו
+          if (window.ExcelGrid?.applyToTextarea) {
+            ExcelGrid.applyToTextarea();
+          } else {
+            alert('ExcelGrid.applyToTextarea() לא נמצא. ודא שבשלב 2 חשפת את הפונקציה ל-globals.');
+            return;
+          }
+        
+          // שלב 2: סידור אוטומטי לפי האילוצים (הפונקציה הקיימת שלך)
+          autoSchedule();
+        });
 
 
 // --- ניהול הבלטת שמות (Spotlight) סופי ---
@@ -2452,19 +2466,19 @@ document.getElementById('quickFetchButton').addEventListener('click', () => fetc
     renderGrid();
   }
 
-  function applyToTextarea(){
-    pullFromDOM();
-    let out = '';
-    dayLabelsFull.forEach((day,i)=>{
-      out += day + '\n';
-      timeLabels.forEach((t,r)=>{
-        out += `${t}\t${matrix[r][i]}\n`;
+    function applyToTextarea(){
+      pullFromDOM();
+      let out = '';
+      dayLabelsFull.forEach((day,i)=>{
+        out += day + '\n';
+        timeLabels.forEach((t,r)=>{
+          out += `${t}\t${matrix[r][i]}\n`;
+        });
+        out += '\n';
       });
-      out += '\n';
-    });
-    el(TXT_ID).value = out.trim();
-    document.getElementById('analyzeButton').click();
-  }
+      el(TXT_ID).value = out.trim();
+      // שים לב: לא מפעילים כאן analyzeButton.click() כדי למנוע הרצה כפולה
+    }
 
   function clearGrid(){
     buildEmptyMatrix();
@@ -2484,7 +2498,7 @@ document.getElementById('quickFetchButton').addEventListener('click', () => fetc
     };
   }
 
-  window.ExcelGrid = { init };
+  window.ExcelGrid = { init, applyToTextarea, loadFromTextarea, clear: clearGrid };
 })();
     
 document.addEventListener("DOMContentLoaded", () => {
