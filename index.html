@@ -2449,16 +2449,61 @@ setupAssistEditors();
   }
 
   function loadFromTextarea(){
-    const txt = el(TXT_ID).value;
-    const parsed = parseVerticalText(txt);
-    if (parsed.error){ alert('שגיאה בטעינת הנתונים'); return; }
-
-    buildEmptyMatrix();
-    parsed.data.forEach((row,r)=>{
-      row.forEach((cell,c)=> matrix[r][c] = normalizeCell(cell));
-    });
-    renderGrid();
-  }
+      const txt = el(TXT_ID).value.trim();
+    
+      // 1) ניסיון ראשון: פורמט אנכי (ימים → שעות → שמות)
+      const parsed = parseVerticalText(txt);
+      if (!parsed.error){
+        buildEmptyMatrix();
+        parsed.data.forEach((row,r)=>{
+          row.forEach((cell,c)=> matrix[r][c] = normalizeCell(cell));
+        });
+        renderGrid();
+        return;
+      }
+    
+      // 2) Fallback: CSV/TSV (שורות=שעות, עמודות=ימים)
+      // מצפה לאחת משתי צורות:
+      //   א. עם כותרת ימים בשורה הראשונה (העמודה הראשונה היא "שעות / יום", ואז יום ראשון, שני, ...)
+      //   ב. בלי כותרת ימים (רק שורות של משמרות)
+      const rows = parseTableLike(txt).filter(r => r.some(x => x && x.length));
+    
+      if (!rows.length){
+        alert('שגיאה בטעינת הנתונים: הטקסט ריק או לא מזוהה');
+        return;
+      }
+    
+      buildEmptyMatrix();
+    
+      // נזהה האם יש כותרת ימים בשורה הראשונה (שכוללת "ראשון"/"שני"/... בשמות)
+      const header = rows[0].map(x => (x||'').trim());
+      const hasDayHeader = header.some(h => EXPECTED_DAYS.some(d => h.includes(d.replace('יום ', '')) || h.includes(d)));
+    
+      // קובע מאיזו שורה וקולונה מתחילים:
+      // אם יש header של ימים, נניח:
+      //   col0 = "שעות / יום" או שעה, וימים מתחילים מ-col1
+      // אחרת:
+      //   אין header, מתחילים מהשורה הראשונה ישירות
+      let startRow = hasDayHeader ? 1 : 0;
+    
+      // מיפוי שורות לגריד: ננסה להתאים שורה לשעה על פי timeLabels[r].
+      // אם העמודה הראשונה תואמת טקסטואלית לשעה, נתחיל מהעמודה 1;
+      // אחרת נניח שאין עמודת שעה, ונקרא מהעמודה 0.
+      for (let r = 0; r < timeLabels.length && (startRow + r) < rows.length; r++) {
+        const line = rows[startRow + r];
+        if (!line) continue;
+    
+        const col0 = (line[0] || '').trim();
+        const haveTimeInFirstCol = col0 && timeLabels[r].startsWith(col0);
+    
+        const startCol = haveTimeInFirstCol ? 1 : 0;
+        for (let c = 0; c < dayLabelsFull.length && (startCol + c) < line.length; c++) {
+          matrix[r][c] = normalizeCell(line[startCol + c] || '');
+        }
+      }
+    
+      renderGrid();
+    }
 
     function applyToTextarea(){
       pullFromDOM();
