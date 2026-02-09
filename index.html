@@ -260,13 +260,6 @@ background-clip: padding-box;        /* לשמר גבולות */
 background-color: #eef6f8;           /* צבע חלש ולא אטום */
 }
 
-#schedule-table thead {
-background-color: var(--primary-blue);
-color: white;
-letter-spacing: 1px;
-font-weight: 700;
-}
-
 #schedule-table tbody tr:hover {
 background-color: #f5f9fa;
 }
@@ -830,6 +823,8 @@ transition: all 0.2s ease;
       <button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
       <button id="btnExcelApplyToText" type="button" class="excel-btn primary">החיל לטקסט ↪︎</button>
       <button id="btnExcelAuto" type="button" class="excel-btn primary">סדר אוטומטי ↻</button>
+      <!-- הכפתור המוזז: אותו id כדי שה־JS הקיים יעבוד -->
+      <button id="generateLinkButton" type="button" class="excel-btn">הורד טבלת HTML 💾</button>
       <button id="btnExcelClear" type="button" class="excel-btn danger">נקה</button>
     </div>
   </div>
@@ -857,49 +852,46 @@ transition: all 0.2s ease;
 הכנס את כתובת ה-Web App של Google Apps Script (שמחזירה את נתוני הסידור בפורמט טקסט/CSV)
 </p>
 
-<div style="text-align: center; margin-bottom: 15px;">
-<a href="https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0" target="_blank" style="text-decoration: none;">
-<button class="google-sheet-button">
-פתח גיליון נתונים (Google Sheets) 📄
-</button>
-</a>
-</div>
-<div style="display: flex; gap: 10px; margin-bottom: 5px; margin-top: 10px;"> <input type="text" id="googleSheetUrl" placeholder="הדבק כאן את כתובת ה-Web App..." style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; direction: ltr; text-align: left;">
-<button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
-</div>
-
-<p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
+            <div style="text-align: center; margin-bottom: 15px;">
+            <a href="https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0" target="_blank" style="text-decoration: none;">
+            <button class="google-sheet-button">
+            פתח גיליון נתונים (Google Sheets) 📄
+            </button>
+            </a>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 5px; margin-top: 10px;"> <input type="text" id="googleSheetUrl" placeholder="הדבק כאן את כתובת ה-Web App..." style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; direction: ltr; text-align: left;">
+            <button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
+            </div>
+            
+            <p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
            
             <div class="date-input-container">
                 <label for="startDate">תאריך יום ראשון :</label>
                 <input type="date" id="startDate" required>
             </div>
            
-<div class="editor-layout-row">
-
-<div class="textarea-container">
-<textarea id="dataToAnalyze"
-title="נתוני משמרות לעריכה וניתוח"
-placeholder="הדבק את נתוני המשמרות כאן (יום ראשון → שעות → עובד1 עובד2...)"></textarea>
-</div>
-
-<div class="guards-selection-side-panel">
-<h3>בחירת שומרים ליעד של 4–5 משמרות 🏆</h3>
-<p class="file-format-info" style="font-size: 0.85em; margin-bottom: 10px;">
-לחץ על השומרים שחייבים להגיע ליעד (4–5 משמרות) - עדיפות בשיבוץ:
-</p>
-<div id="guardButtonsContainer" class="guard-selector-container" style="box-shadow: none; border: 1px solid #eee; background: #fafafa;">
-</div>
-<input type="hidden" id="guardsFor5Shifts">
-</div>
-
-</div>
+            <div class="editor-layout-row">
+            
+            <div class="textarea-container">
+            <textarea id="dataToAnalyze"
+            title="נתוני משמרות לעריכה וניתוח"
+            placeholder="הדבק את נתוני המשמרות כאן (יום ראשון → שעות → עובד1 עובד2...)"></textarea>
+            </div>
+            
+            <div class="guards-selection-side-panel">
+            <h3>בחירת שומרים ליעד של 4–5 משמרות 🏆</h3>
+            <p class="file-format-info" style="font-size: 0.85em; margin-bottom: 10px;">
+            לחץ על השומרים שחייבים להגיע ליעד (4–5 משמרות) - עדיפות בשיבוץ:
+            </p>
+            <div id="guardButtonsContainer" class="guard-selector-container" style="box-shadow: none; border: 1px solid #eee; background: #fafafa;">
+            </div>
+            <input type="hidden" id="guardsFor5Shifts">
+            </div>
+            
+            </div>
            
             <div id="button-group">
                 <button id="analyzeButton">נתח נתונים 🔍</button>
-                <button id="downloadButton">הורד קובץ CSV ⬇️</button>
-                <button id="generateLinkButton">הורד טבלת HTML מעוצבת 💾</button>
-                <button id="resetButton">אפס נתונים 🗑️</button>
             </div>
         </div>
        
@@ -1866,7 +1858,7 @@ setupAssistEditors();
                 let night02_06_block = initialParsedData.days.map(() => new Set());
 
                 const shiftsToFill = []; // המשבצות שצריך למלא באיטרציה זו
-let assistanceShiftsDone = new Set(); // **חדש: מעקב אחרי משמרות ליווי**
+                let assistanceShiftsDone = new Set(); // **חדש: מעקב אחרי משמרות ליווי**
 
 
                 // 2. איסוף נתוני זמינות והעתקת שיבוץ ידני
@@ -1885,38 +1877,38 @@ let assistanceShiftsDone = new Set(); // **חדש: מעקב אחרי משמרו�
                         if (!availabilityMap[dayIndex]) availabilityMap[dayIndex] = {};
                         availabilityMap[dayIndex][shiftIndex] = new Set(availableNames);
 
-// שיבוץ ידני (אם הוכנסו) וספירת נתונים
-// *** קוד מתוקן: מפריד בין ליווי (שנשמר ידנית) למשמרות רגילות ***
-let namesInSlot = [];
-
-if (iteration === 0) {
-
-if (isAssistanceShift) {
-// שומרים את מי ששובץ ידנית בליווי כדי שהרובוט ידע שהם תפוסים ולא ישבץ אותם שוב באותו יום
-namesInSlot = availableNames.filter(name => allEmployees.includes(name));
-} else {
-// 🛑 עבור משמרות רגילות: שומרים שיבוץ ידני רק אם הכמות תקינה
-if (availableNames.length === required && availableNames.length > 0) {
-namesInSlot = availableNames; // שומר שיבוץ ידני תקין
-} else {
-namesInSlot = []; // מנקה משבצת ריקה או לא תקינה
-}
-}
-// שמירת הנתונים המאומתים/שנשמרו ידנית עבור איטרציות הבאות
-newScheduleData[shiftIndex][dayIndex] = namesInSlot;
-} else {
-// עבור איטרציות עתידיות: משתמשים בשיבוץ שכבר נקבע
-namesInSlot = newScheduleData[shiftIndex][dayIndex];
-}
-
-                        namesInSlot.forEach(name => {
-                            if (allEmployees.includes(name)) {
-// סופר את כל המשמרות, כולל ליווי
-                                if (!isAssistanceShift) {
-employeeShiftsCount[name] = (employeeShiftsCount[name] || 0) + 1;
-}
-
-// **חדש: הוספת בדיקה ורישום ליווי ידני**
+                // שיבוץ ידני (אם הוכנסו) וספירת נתונים
+                // *** קוד מתוקן: מפריד בין ליווי (שנשמר ידנית) למשמרות רגילות ***
+                let namesInSlot = [];
+                
+                if (iteration === 0) {
+                
+                if (isAssistanceShift) {
+                // שומרים את מי ששובץ ידנית בליווי כדי שהרובוט ידע שהם תפוסים ולא ישבץ אותם שוב באותו יום
+                namesInSlot = availableNames.filter(name => allEmployees.includes(name));
+                } else {
+                // 🛑 עבור משמרות רגילות: שומרים שיבוץ ידני רק אם הכמות תקינה
+                if (availableNames.length === required && availableNames.length > 0) {
+                namesInSlot = availableNames; // שומר שיבוץ ידני תקין
+                } else {
+                namesInSlot = []; // מנקה משבצת ריקה או לא תקינה
+                }
+                }
+                // שמירת הנתונים המאומתים/שנשמרו ידנית עבור איטרציות הבאות
+                newScheduleData[shiftIndex][dayIndex] = namesInSlot;
+                } else {
+                // עבור איטרציות עתידיות: משתמשים בשיבוץ שכבר נקבע
+                namesInSlot = newScheduleData[shiftIndex][dayIndex];
+                }
+                
+                                        namesInSlot.forEach(name => {
+                                            if (allEmployees.includes(name)) {
+                // סופר את כל המשמרות, כולל ליווי
+                                                if (!isAssistanceShift) {
+                employeeShiftsCount[name] = (employeeShiftsCount[name] || 0) + 1;
+                }
+                
+                // **חדש: הוספת בדיקה ורישום ליווי ידני**
                                 if (isAssistanceShift) {
                                     assistanceShiftsDone.add(name);
                                 }
@@ -1932,10 +1924,10 @@ employeeShiftsCount[name] = (employeeShiftsCount[name] || 0) + 1;
                                     }
                                 }
                                
-// מעקב לילה 02-06 - שימוש במשתנה המאוחד
-if (shiftIndex === NIGHT_SHIFT_2_6_INDEX) {
-night02_06_block[dayIndex].add(name);
-}
+                        // מעקב לילה 02-06 - שימוש במשתנה המאוחד
+                        if (shiftIndex === NIGHT_SHIFT_2_6_INDEX) {
+                        night02_06_block[dayIndex].add(name);
+                        }
 
                                 const nextShiftIndex = shiftIndex + 1;
                                 if (CONSECUTIVE_SHIFT_CHECK[nextShiftIndex] === shiftIndex) {
@@ -1945,14 +1937,14 @@ night02_06_block[dayIndex].add(name);
                         });
 
 
-// הרובוט ימלא משמרת רק אם היא לא משמרת ליווי (Assist) והיא לא מלאה
-if (!isAssistanceShift && newScheduleData[shiftIndex][dayIndex].length < required) {
-shiftsToFill.push({
-dayIndex,
-shiftIndex,
-requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
-});
-}
+                                // הרובוט ימלא משמרת רק אם היא לא משמרת ליווי (Assist) והיא לא מלאה
+                                if (!isAssistanceShift && newScheduleData[shiftIndex][dayIndex].length < required) {
+                                shiftsToFill.push({
+                                dayIndex,
+                                shiftIndex,
+                                requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
+                            });
+                        }
                     });
                     if (mustStop) return;
                 });
@@ -2081,7 +2073,7 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
                     }
                 }
 
-// הרצת סבב 1: עדיפות מוחלטת לשומרים שחייבים 5-6 משמרות
+                // הרצת סבב 1: עדיפות מוחלטת לשומרים שחייבים 5-6 משמרות
                 shiftsToFill.forEach(shift => fillShiftLogic(shift, true));
 
                 // הרצת סבב 2: מילוי שאר המשבצות עם שאר העובדים
@@ -2206,7 +2198,7 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
         msg.style.backgroundColor = '#546E7A';
         msg.style.display = 'block';
         setTimeout(() => { msg.style.display = 'none'; }, 3000);
-}
+        }
 
         async function fetchFromGoogleSheet(isQuickFetch = false) {
             const url = document.getElementById('googleSheetUrl').value;
@@ -2297,62 +2289,54 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
             document.getElementById('guardsFor5Shifts').value = selectedNames.join(', ');
         }
 
-        // --- קישור אירועים לכפתורים ---
-        document.getElementById('analyzeButton').addEventListener('click', () => {
-          // קודם מסנכרנים את הגריד לטקסט בפורמט שה-parser מצפה לו
-          if (window.ExcelGrid?.applyToTextarea) {
-            ExcelGrid.applyToTextarea();
-          }
-          const textContent = document.getElementById('dataToAnalyze')?.value || '';
-          renderSchedule(parseVerticalText(textContent));
-        });
-
-        document.getElementById('downloadButton').addEventListener('click', () => {
-          if (window.ExcelGrid?.applyToTextarea) {
-            ExcelGrid.applyToTextarea(); // מייצר טקסט עדכני מהגריד
-          }
-          downloadCsvFile();
-        });
-
-        document.getElementById('resetButton').addEventListener('click', () => {
-             document.getElementById('dataToAnalyze').value = '';
-             document.getElementById('results-container').innerHTML = `<p id="initial-message">הטעינה הראשונית תפעיל את הניתוח אוטומטית.</p>`;
-             lastRenderedTableHTML = '';
-             initializeData();
-        });
-       
-        document.getElementById('generateLinkButton').addEventListener('click', () => {
-          if (window.ExcelGrid?.applyToTextarea) {
-            ExcelGrid.applyToTextarea(); // מסנכרן לגרסה העדכנית
-          }
-          downloadHtmlTable();
-        });
-        
-        document.getElementById('autoScheduleButton').addEventListener('click', () => {
-          if (window.ExcelGrid?.applyToTextarea) {
-            ExcelGrid.applyToTextarea();
-          }
-          autoSchedule();
-        });
-        ``
-        document.getElementById('fetchFromSheetButton').addEventListener('click', fetchFromGoogleSheet);
-        document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
-        // כפתור "סדר אוטומטי" מתוך גריד האקסל
-        document.getElementById('btnExcelAuto')?.addEventListener('click', () => {
-          // שלב 1: סנכרון — מעביר את תוכן הגריד לטקסט בפורמט שה-parser שלך מצפה לו
-          if (window.ExcelGrid?.applyToTextarea) {
-            ExcelGrid.applyToTextarea();
-          } else {
-            alert('ExcelGrid.applyToTextarea() לא נמצא. ודא שבשלב 2 חשפת את הפונקציה ל-globals.');
-            return;
-          }
-        
-          // שלב 2: סידור אוטומטי לפי האילוצים (הפונקציה הקיימת שלך)
-          autoSchedule();
-        });
+            // --- קישור אירועים לכפתורים ---
+            
+            // נתח נתונים: קודם מסנכרנים את הגריד לטקסט שה-parser מצפה לו, ואז מרנדרים
+            document.getElementById('analyzeButton').addEventListener('click', () => {
+              if (window.ExcelGrid?.applyToTextarea) {
+                ExcelGrid.applyToTextarea();
+              }
+              const textContent = document.getElementById('dataToAnalyze')?.value || '';
+              renderSchedule(parseVerticalText(textContent));
+            });
+            
+            // הורד טבלת HTML 💾 (הכפתור נמצא בכרטיס האקסל)
+            // לפני ההורדה מסנכרנים מהגריד כדי לייצא את הגרסה העדכנית
+            document.getElementById('generateLinkButton')?.addEventListener('click', () => {
+              if (window.ExcelGrid?.applyToTextarea) {
+                ExcelGrid.applyToTextarea();
+              }
+              downloadHtmlTable();
+            });
+            
+            // סדר אוטומטי 🤖 (כפתור ראשי): מסנכרן מהגריד ואז מפעיל את הסידור
+            document.getElementById('autoScheduleButton').addEventListener('click', () => {
+              if (window.ExcelGrid?.applyToTextarea) {
+                ExcelGrid.applyToTextarea();
+              }
+              autoSchedule();
+            });
+            
+            // משוך נתונים / משוך מהיר
+            document.getElementById('fetchFromSheetButton').addEventListener('click', fetchFromGoogleSheet);
+            document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
+            
+            // כפתור "סדר אוטומטי ↻" מתוך גריד האקסל (בכרטיס)
+            document.getElementById('btnExcelAuto')?.addEventListener('click', () => {
+              // שלב 1: סנכרון — מעביר את תוכן הגריד לטקסט בפורמט שה-parser שלך מצפה לו
+              if (window.ExcelGrid?.applyToTextarea) {
+                ExcelGrid.applyToTextarea();
+              } else {
+                alert('ExcelGrid.applyToTextarea() לא נמצא. ודא שבסוף מודול הגריד מופיע window.ExcelGrid = { init, applyToTextarea, loadFromTextarea, clear: clearGrid };');
+                return;
+              }
+            
+              // שלב 2: סידור אוטומטי לפי האילוצים (הפונקציה הקיימת שלך)
+              autoSchedule();
+            });
 
 
-// --- ניהול הבלטת שמות (Spotlight) סופי ---
+        // --- ניהול הבלטת שמות (Spotlight) סופי ---
         let lockedName = null;
 
         function updateHighlights(nameToHighlight) {
@@ -2545,12 +2529,12 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
 })();
     
 document.addEventListener("DOMContentLoaded", () => {
-    initializeData();
-    generateGuardsButtons();
-    ExcelGrid.init();
-    document.getElementById("analyzeButton").click();
+  initializeData();
+  generateGuardsButtons();
+  ExcelGrid.init();
+  // לא מנתחים אוטומטית. המשתמש ילחץ "משוך נתונים" או יזין בגריד ואז "נתח/סדר אוטומטי".
 });
-
+        
     </script>
 </body>
 </html>
