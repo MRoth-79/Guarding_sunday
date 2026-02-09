@@ -107,12 +107,6 @@ button:disabled {
   margin: 25px auto;
   width: 100%;
 }
-    
-.google-open-sheet {
-  background-color: #f4b400 !important;   /* צהוב סטייל גוגל */
-  color: #212121 !important;              /* טקסט כהה */
-  border: none;
-}
 
 /* =========================================
   3) בחירת שומרים (פאנל צד)
@@ -700,11 +694,8 @@ textarea:focus {
       <input type="date" id="startDate" required>
     </div>
     <div class="actions">
-  <a id="openSheetLink"
-     href="https://docs.google.com/..."
-     target="_blank" rel="noopener noreferrer"
-     class="excel-btn tertiary google-open-sheet">
-        פתח גיליון נתונים 📄
+      https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0
+        <button type="button" class="excel-btn tertiary">פתח גיליון נתונים 📄</button>
       </a>
       <button id="btnExcelPasteHelp" type="button" class="excel-btn tertiary">איך להדביק?</button>
       <button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
@@ -731,6 +722,26 @@ textarea:focus {
     טיפ: פסיק או Enter מפרידים בין שמות.
   </div>
 </div>
+
+<h3>משיכת נתונים מ-Google Sheet Web App ☁️</h3>
+
+<p class="file-format-info">
+הכנס את כתובת ה-Web App של Google Apps Script (שמחזירה את נתוני הסידור בפורמט טקסט/CSV)
+</p>
+
+            <div style="text-align: center; margin-bottom: 15px;">
+            <a href="https://docs.google.com/..." target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+            <button class="google-sheet-button">
+            פתח גיליון נתונים (Google Sheets) 📄
+            </button>
+            </a>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 5px; margin-top: 10px;"> <input type="text" id="googleSheetUrl" placeholder="הדבק כאן את כתובת ה-Web App..." style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; direction: ltr; text-align: left;">
+            <button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
+            </div>
+            
+            <p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
+
             <div class="editor-layout-row">
             
             <div class="textarea-container">
@@ -1006,8 +1017,17 @@ placeCaretAtEnd(cell);
                         // 2. הכנת התא להמשך הקלדה (הוספת מפריד ומיקוד)
                         appendSeparatorAndFocus(cell, ', ');
                         
-                        // 3. הטריגר המבוקש: הדמיית לחיצה על "נתח נתונים" 🔍
-                        document.getElementById('analyzeButton').click();
+                        // 3. טריגר ניתוח: לחיצה על הכפתור אם קיים; אחרת ניתוח ישיר
+                        const analyzeBtn = document.getElementById('analyzeButton');
+                        if (analyzeBtn) {
+                          analyzeBtn.click();
+                        } else {
+                          if (window.ExcelGrid?.applyToTextarea) {
+                            ExcelGrid.applyToTextarea();
+                          }
+                          const textContent = document.getElementById('dataToAnalyze')?.value || '';
+                          renderSchedule(parseVerticalText(textContent));
+                        }
                         
                     } else if (e.key === ',') {
                         e.preventDefault();
