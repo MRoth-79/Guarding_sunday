@@ -83,30 +83,7 @@ button:disabled {
 }
 
 /* כפתורים ספציפיים */
-#analyzeButton { background-color: var(--btn-analyze); }
-#downloadButton { background-color: var(--btn-download); }
 #generateLinkButton { background-color: var(--btn-generate); }
-#resetButton { background-color: var(--btn-reset); }
-#autoScheduleButton {
-  background-color: var(--btn-auto);
-  padding: 15px 40px;
-  font-size: 19px;
-  width: auto;
-  min-width: 250px;
-  max-width: 400px;
-}
-
-/* קבוצות כפתורים */
-#button-group,
-#main-button-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 25px auto;
-  width: 100%;
-}
 
 /* =========================================
   3) בחירת שומרים (פאנל צד)
@@ -541,7 +518,6 @@ textarea:focus {
 ========================================= */
 .google-sheet-button { background-color: #f4b400; color: #212121; padding: 10px 30px; font-weight: bold; font-size: 16px; border-radius: 8px; }
 .fetch-button { background-color: #4CAF50; color: white; padding: 10px 15px; min-width: 120px; border-radius: 6px; transition: all 0.2s ease; }
-.quick-fetch-button { background-color: var(--btn-generate); color: white; padding: 12px 25px; border-radius: 8px; transition: all 0.2s ease; }
 
 /* =========================================
   15) כרטיס אקסל
@@ -674,7 +650,8 @@ textarea:focus {
   box-shadow: 0 0 5px rgba(0, 121, 107, 0.15);
 }
 </style>
-  
+</head>
+<body> 
 <div class="modern-main-header waving-flag">מנתח טבלת משמרות 📅</div>
    
     <div id="input-section-wrapper">
@@ -754,22 +731,9 @@ textarea:focus {
             <div id="guardButtonsContainer" class="guard-selector-container" style="box-shadow: none; border: 1px solid #eee; background: #fafafa;">
             </div>
             <input type="hidden" id="guardsFor5Shifts">
-            </div>
-            
-            </div>
-           
-            <div id="button-group">
-                <button id="analyzeButton">נתח נתונים 🔍</button>
-            </div>
+            </div>            
         </div>
-       
-    </div>
-   
-    <div id="main-button-wrapper">
-<button id="quickFetchButton" class="quick-fetch-button">משוך נתונים מהיר 🔄</button>
-        <button id="autoScheduleButton">סדר אוטומטי 🤖</button>
-    </div>
-
+    </div>     
     <div id="results-container" style="text-align: center;">
         <p id="initial-message">הטעינה הראשונית תפעיל את הניתוח אוטומטית.</p>
     </div>
@@ -1460,26 +1424,26 @@ return a.localeCompare(b, 'he');
                     `<span class="night-limit-ok">✅ ${night2to6Count}</span>`;
 
 
-// בדיקת עמידה בתנאי החדש (5 עד 6 משמרות)
-if (count === MAX_ALLOWED) {
-rowClass = 'shifts-5-count'; // חזותית: שימוש בכיתה קיימת
-statusText = `✅ עמד (${MAX_ALLOWED} משמרות - מקסימום)`;
-} else if (count === (MAX_ALLOWED - 1)) {
-rowClass = 'shifts-4-count'; // שימוש בכיתה קיימת לטווח שמתחת
-statusText = `✅ עמד (${MAX_ALLOWED - 1} משמרות)`;
-} else if (count < MIN_REQUIRED) {
-rowClass = 'low-shifts'; // אדום
-statusText = `❌ לא עמד (פחות מ-${MIN_REQUIRED} - ${count})`;
-} else if (count > MAX_ALLOWED) {
-rowClass = 'not-met-condition';
-statusText = `❌ איסור! (יותר מדי - ${count})`;
-exceptions.push({
-day: "סיכום שבועי",
-slot: "מכסת משמרות",
-name: name,
-msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MAX_ALLOWED})`
-});
-}
+    // בדיקת עמידה בתנאי החדש (5 עד 6 משמרות)
+    if (count === MAX_ALLOWED) {
+    rowClass = 'shifts-5-count'; // חזותית: שימוש בכיתה קיימת
+    statusText = `✅ עמד (${MAX_ALLOWED} משמרות - מקסימום)`;
+    } else if (count === (MAX_ALLOWED - 1)) {
+    rowClass = 'shifts-4-count'; // שימוש בכיתה קיימת לטווח שמתחת
+    statusText = `✅ עמד (${MAX_ALLOWED - 1} משמרות)`;
+    } else if (count < MIN_REQUIRED) {
+    rowClass = 'low-shifts'; // אדום
+    statusText = `❌ לא עמד (פחות מ-${MIN_REQUIRED} - ${count})`;
+    } else if (count > MAX_ALLOWED) {
+    rowClass = 'not-met-condition';
+    statusText = `❌ איסור! (יותר מדי - ${count})`;
+    exceptions.push({
+    day: "סיכום שבועי",
+    slot: "מכסת משמרות",
+    name: name,
+    msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MAX_ALLOWED})`
+    });
+    }
 
                 // הוספת קלאס התראה גם אם חרגו ממשמרת הלילה הספציפית
                 if (night2to6Count > MAX_NIGHT_2_6) {
@@ -1497,8 +1461,7 @@ msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MA
                 `;
             });
 
-            summaryTableHTML += '</tbody></table>';
-           
+            summaryTableHTML += '</tbody></table>';      
 
 // --- בניית טבלת החריגות (מעל הסיכום) ---
 let exceptionsTableHTML = `
@@ -1539,7 +1502,6 @@ tableHTML += exceptionsTableHTML + summaryTableHTML;
 resultsContainer.innerHTML = tableHTML;
 setupAssistEditors();
         }
-
 
         /**
          * פונקציה מעודכנת להורדת קובץ HTML שמכיל רק את הטבלה המעוצבת - כולל תאריכים
@@ -1686,7 +1648,6 @@ setupAssistEditors();
                                 alert('אנא בחר תאריך התחלה (יום ראשון) לפני הסידור האוטומטי.');
                                 return;
                             }
-
 
                             const initialParsedData = parseVerticalText(textContent);
 
@@ -2085,7 +2046,6 @@ setupAssistEditors();
             }
 
             localStorage.setItem('googleSheetUrl', url);
-
             statusEl.textContent = 'טוען נתונים מה-Sheet... 🔄';
             statusEl.style.color = 'var(--primary-blue)';
             statusEl.style.display = 'block';
@@ -2099,7 +2059,6 @@ setupAssistEditors();
                
                 const data = await response.text();
                 if (!data.trim()) throw new Error("התקבל טקסט ריק מהשרת");
-
 
                 dataTextArea.value = data;
                 statusEl.textContent = '✅ נתונים נטענו בהצלחה! ממלא את טבלת האקסל...';
@@ -2150,19 +2109,10 @@ setupAssistEditors();
             document.getElementById('guardsFor5Shifts').value = selectedNames.join(', ');
         }
 
-            // --- קישור אירועים לכפתורים ---
-            
-            // נתח נתונים: קודם מסנכרנים את הגריד לטקסט שה-parser מצפה לו, ואז מרנדרים
-            document.getElementById('analyzeButton').addEventListener('click', () => {
-              if (window.ExcelGrid?.applyToTextarea) {
-                ExcelGrid.applyToTextarea();
-              }
-              const textContent = document.getElementById('dataToAnalyze')?.value || '';
-              renderSchedule(parseVerticalText(textContent));
-            });
-            
-            // הורד טבלת HTML 💾 (הכפתור נמצא בכרטיס האקסל)
-            // לפני ההורדה מסנכרנים מהגריד כדי לייצא את הגרסה העדכנית
+            // --- קישור אירועים לכפתורים (גרסה נקייה לכפתורים החדשים בכרטיס האקסל בלבד) ---
+
+            // הורד טבלת HTML 💾 (בכרטיס האקסל):
+            // לפני ההורדה מסנכרנים מהגריד כדי לייצא את הגרסה העדכנית למסך/קובץ
             document.getElementById('generateLinkButton')?.addEventListener('click', () => {
               if (window.ExcelGrid?.applyToTextarea) {
                 ExcelGrid.applyToTextarea();
@@ -2170,32 +2120,23 @@ setupAssistEditors();
               downloadHtmlTable();
             });
             
-            // סדר אוטומטי 🤖 (כפתור ראשי): מסנכרן מהגריד ואז מפעיל את הסידור
-            document.getElementById('autoScheduleButton').addEventListener('click', () => {
-              if (window.ExcelGrid?.applyToTextarea) {
-                ExcelGrid.applyToTextarea();
-              }
-              autoSchedule();
-            });
-            
-            // משוך נתונים / משוך מהיר
-            document.getElementById('fetchFromSheetButton').addEventListener('click', fetchFromGoogleSheet);
-            document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
-            
-            // כפתור "סדר אוטומטי ↻" מתוך גריד האקסל (בכרטיס)
+            // "סדר אוטומטי ↻" מתוך גריד האקסל (בכרטיס):
+            // 1) סנכרון גריד -> טקסט בפורמט ה-parser
+            // 2) הרצת הסידור לפי האילוצים
             document.getElementById('btnExcelAuto')?.addEventListener('click', () => {
-              // שלב 1: סנכרון — מעביר את תוכן הגריד לטקסט בפורמט שה-parser שלך מצפה לו
               if (window.ExcelGrid?.applyToTextarea) {
                 ExcelGrid.applyToTextarea();
               } else {
-                alert('ExcelGrid.applyToTextarea() לא נמצא. ודא שבסוף מודול הגריד מופיע window.ExcelGrid = { init, applyToTextarea, loadFromTextarea, clear: clearGrid };');
+                alert('ExcelGrid.applyToTextarea() לא נמצא. ודא שבסוף מודול הגריד יש:\nwindow.ExcelGrid = { init, applyToTextarea, loadFromTextarea, clear: clearGrid };');
                 return;
               }
-            
-              // שלב 2: סידור אוטומטי לפי האילוצים (הפונקציה הקיימת שלך)
               autoSchedule();
             });
-
+            
+            // משוך נתונים מהיר 🔄 (החדש, אם הוספת אותו לתוך כרטיס האקסל)
+            document.getElementById('quickFetchButton')?.addEventListener('click', () => {
+              fetchFromGoogleSheet(true);
+            });
 
         // --- ניהול הבלטת שמות (Spotlight) סופי ---
         let lockedName = null;
@@ -2255,6 +2196,7 @@ setupAssistEditors();
                 updateHighlights(null);
             }
         });
+        
 /* ============================================================
    Excel-like Input Grid
    ============================================================ */
