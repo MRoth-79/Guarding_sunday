@@ -1181,7 +1181,7 @@ placeCaretAtEnd(cell);
                     currentDay = dayMatch;
                     rawDayData[currentDay] = [];
                 } else if (currentDay) {
-                    const parts = cleanedLine.split(/\s{2,}|\t/).map(p => p.trim());
+                    const parts = line.split(/\s{2,}|\t/).map(p => p.trim());
                     const timeSlotString = parts[0];
                    
                     const isTimeSlot = Object.keys(timeSlotCheckMap).some(timePart => timeSlotString && timeSlotString.startsWith(timePart));
