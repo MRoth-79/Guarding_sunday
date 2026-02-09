@@ -107,6 +107,12 @@ button:disabled {
   margin: 25px auto;
   width: 100%;
 }
+    
+.google-open-sheet {
+  background-color: #f4b400 !important;   /* צהוב סטייל גוגל */
+  color: #212121 !important;              /* טקסט כהה */
+  border: none;
+}
 
 /* =========================================
   3) בחירת שומרים (פאנל צד)
@@ -694,11 +700,16 @@ textarea:focus {
       <input type="date" id="startDate" required>
     </div>
     <div class="actions">
+  <a id="openSheetLink"
+     href="https://docs.google.com/..."
+     target="_blank" rel="noopener noreferrer"
+     class="excel-btn tertiary google-open-sheet">
+        פתח גיליון נתונים 📄
+      </a>
       <button id="btnExcelPasteHelp" type="button" class="excel-btn tertiary">איך להדביק?</button>
       <button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
       <button id="btnExcelApplyToText" type="button" class="excel-btn primary">החיל לטקסט ↪︎</button>
       <button id="btnExcelAuto" type="button" class="excel-btn primary">סדר אוטומטי ↻</button>
-      <!-- הכפתור המוזז: אותו id כדי שה־JS הקיים יעבוד -->
       <button id="generateLinkButton" type="button" class="excel-btn">הורד טבלת HTML 💾</button>
       <button id="btnExcelClear" type="button" class="excel-btn danger">נקה</button>
     </div>
@@ -720,26 +731,6 @@ textarea:focus {
     טיפ: פסיק או Enter מפרידים בין שמות.
   </div>
 </div>
-
-<h3>משיכת נתונים מ-Google Sheet Web App ☁️</h3>
-
-<p class="file-format-info">
-הכנס את כתובת ה-Web App של Google Apps Script (שמחזירה את נתוני הסידור בפורמט טקסט/CSV)
-</p>
-
-            <div style="text-align: center; margin-bottom: 15px;">
-            <a href="https://docs.google.com/..." target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
-            <button class="google-sheet-button">
-            פתח גיליון נתונים (Google Sheets) 📄
-            </button>
-            </a>
-            </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 5px; margin-top: 10px;"> <input type="text" id="googleSheetUrl" placeholder="הדבק כאן את כתובת ה-Web App..." style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; direction: ltr; text-align: left;">
-            <button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
-            </div>
-            
-            <p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
-
             <div class="editor-layout-row">
             
             <div class="textarea-container">
