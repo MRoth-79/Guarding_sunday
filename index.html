@@ -1150,7 +1150,10 @@ placeCaretAtEnd(cell);
          * פונקציה לניקוי אגרסיבי של שורה מתווים בלתי נראים וריווח (נשארת זהה)
          */
         function aggressiveClean(line) {
-            return line.replace(/[\u0000-\u001F\u007F-\u009F\uFEFF\u00A0]/g, '').trim();
+          // שומר על טאב (\u0009) כדי שפיצול לפי \t ימשיך לעבוד
+          return line
+            .replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F\uFEFF\u00A0]/g, '')
+            .trim();
         }
        
         /**
