@@ -199,7 +199,6 @@ background-color: white;
 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 border-radius: 12px;                 /* נשמר עם טריק בהמשך */
 overflow: hidden;                    /* לשמור על רדיוס */
-table-layout: auto;
 border: 2px solid #90a4ae;           /* מסגרת חיצונית מודגשת */
 }
 
@@ -264,38 +263,16 @@ background-color: #eef6f8;           /* צבע חלש ולא אטום */
 background-color: #f5f9fa;
 }
 
-/* עמודת השעות */
-.time-slot {
-background-color: var(--secondary-blue);
-color: white;
-text-shadow: 0 0 3px rgba(0,0,0,0.3);
-font-weight: bold;
-direction: ltr !important; /* תיקון הצגת שעות 02:00-06:00 */
-border-left: 2px solid #e2e8f0 !important;
-}
-
-/* --- הדגשת סוף שבוע (שישי ושבת) באפרסק --- */
-/* עמודה 6 היא שישי, עמודה 7 היא שבת */
-#schedule-table th:nth-child(7), #schedule-table th:nth-child(8) {
-background-color: #ff8a65; /* שישי ושבת */
-}
-
-#schedule-table td:nth-child(7), #schedule-table td:nth-child(8) {
-background-color: var(--saturday-bg) !important; /* שישי ושבת */
-}
-
 /* אופציונלי: יום ראשון (העמודה האחרונה) בצבע נייטרלי עדין */
 #schedule-table td:last-child {
 padding-left: 20px;
 }
-
 
 #schedule-table tbody tr:hover td.time-slot {
 color: #000;
 background-color: #e6f2f4;
 text-shadow: none;
 }
-
 
 /* =========================================
   5. שמות שומרים (בועות) וצבעים
@@ -853,7 +830,7 @@ transition: all 0.2s ease;
 </p>
 
             <div style="text-align: center; margin-bottom: 15px;">
-            <a href="https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0" target="_blank" style="text-decoration: none;">
+            <a href="https://docs.google.com/..." target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
             <button class="google-sheet-button">
             פתח גיליון נתונים (Google Sheets) 📄
             </button>
@@ -1204,7 +1181,7 @@ placeCaretAtEnd(cell);
                     currentDay = dayMatch;
                     rawDayData[currentDay] = [];
                 } else if (currentDay) {
-                    const parts = line.split(/\s{2,}|\t/).map(p => p.trim());
+                    const parts = cleanedLine.split(/\s{2,}|\t/).map(p => p.trim());
                     const timeSlotString = parts[0];
                    
                     const isTimeSlot = Object.keys(timeSlotCheckMap).some(timePart => timeSlotString && timeSlotString.startsWith(timePart));
@@ -2241,16 +2218,6 @@ setupAssistEditors();
                 }
                 
                 // לא מנתחים כאן אוטומטית. המשתמש ילחץ "סדר אוטומטי ↻" או "נתח נתונים".
-                document.getElementById('excel-input-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // שלב חשוב: מלא את גריד האקסל לפי הטקסט שהבאנו
-                if (window.ExcelGrid?.loadFromTextarea) {
-                  ExcelGrid.loadFromTextarea();
-                } else {
-                  console.warn('ExcelGrid.loadFromTextarea() לא נמצא. ודא שהמודול נחשף ל-globals.');
-                }
-                
-                // אופציונלי: גלול לגריד כדי שהמשתמש יראה מיד את התוצאה
                 document.getElementById('excel-input-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
                 // אין ניתוח אוטומטי כאן. המשתמש ילחץ "סדר אוטומטי ↻" בכרטיס האקסל.
