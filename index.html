@@ -108,6 +108,12 @@ button:disabled {
   width: 100%;
 }
 
+/* עיצוב אחיד גם ל-<a class="excel-btn ..."> */
+.excel-btn {
+  text-decoration: none;     /* בלי קו תחתון */
+  display: inline-block;     /* נותן לפדינג לעבוד כמו בכפתור */
+}
+
 /* =========================================
   3) בחירת שומרים (פאנל צד)
 ========================================= */
@@ -694,8 +700,13 @@ textarea:focus {
       <input type="date" id="startDate" required>
     </div>
     <div class="actions">
-      https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0
-        <button type="button" class="excel-btn tertiary">פתח גיליון נתונים 📄</button>
+      <a
+        href="https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0"
+        class="excel-btn tertiary"
+        target="_blank"
+        rel="noopener noreferrer"
+        >
+        פתח גיליון נתונים 📄
       </a>
       <button id="btnExcelPasteHelp" type="button" class="excel-btn tertiary">איך להדביק?</button>
       <button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
@@ -729,13 +740,6 @@ textarea:focus {
 הכנס את כתובת ה-Web App של Google Apps Script (שמחזירה את נתוני הסידור בפורמט טקסט/CSV)
 </p>
 
-            <div style="text-align: center; margin-bottom: 15px;">
-            <a href="https://docs.google.com/..." target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
-            <button class="google-sheet-button">
-            פתח גיליון נתונים (Google Sheets) 📄
-            </button>
-            </a>
-            </div>
             <div style="display: flex; gap: 10px; margin-bottom: 5px; margin-top: 10px;"> <input type="text" id="googleSheetUrl" placeholder="הדבק כאן את כתובת ה-Web App..." style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; direction: ltr; text-align: left;">
             <button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
             </div>
