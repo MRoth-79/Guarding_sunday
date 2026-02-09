@@ -807,6 +807,10 @@ transition: all 0.2s ease;
   background: #f8fbff;
 }
 
+    /* הסתרה מלאה של עורך הטקסט הישן */
+    .textarea-container { display: none !important; 
+}
+    
 </style>
 </head>
 <body>
@@ -2238,6 +2242,15 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
                 statusEl.textContent = '✅ נתונים נטענו בהצלחה! ממלא את טבלת האקסל...';
                 statusEl.style.color = 'green';
                 
+                if (window.ExcelGrid?.loadFromTextarea) {
+                  ExcelGrid.loadFromTextarea();   // ממלא את הגריד מתוך הטקסט
+                } else {
+                  console.warn('ExcelGrid.loadFromTextarea() לא נמצא.');
+                }
+                
+                // לא מנתחים כאן אוטומטית. המשתמש ילחץ "סדר אוטומטי ↻" או "נתח נתונים".
+                document.getElementById('excel-input-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
                 // שלב חשוב: מלא את גריד האקסל לפי הטקסט שהבאנו
                 if (window.ExcelGrid?.loadFromTextarea) {
                   ExcelGrid.loadFromTextarea();
@@ -2285,13 +2298,21 @@ requiredCount: required - newScheduleData[shiftIndex][dayIndex].length
         }
 
         // --- קישור אירועים לכפתורים ---
-       
         document.getElementById('analyzeButton').addEventListener('click', () => {
-            const textContent = document.getElementById('dataToAnalyze').value;
-            renderSchedule(parseVerticalText(textContent));
+          // קודם מסנכרנים את הגריד לטקסט בפורמט שה-parser מצפה לו
+          if (window.ExcelGrid?.applyToTextarea) {
+            ExcelGrid.applyToTextarea();
+          }
+          const textContent = document.getElementById('dataToAnalyze')?.value || '';
+          renderSchedule(parseVerticalText(textContent));
         });
 
-document.getElementById('downloadButton').addEventListener('click', downloadCsvFile);
+        document.getElementById('downloadButton').addEventListener('click', () => {
+          if (window.ExcelGrid?.applyToTextarea) {
+            ExcelGrid.applyToTextarea(); // מייצר טקסט עדכני מהגריד
+          }
+          downloadCsvFile();
+        });
 
         document.getElementById('resetButton').addEventListener('click', () => {
              document.getElementById('dataToAnalyze').value = '';
@@ -2300,7 +2321,13 @@ document.getElementById('downloadButton').addEventListener('click', downloadCsvF
              initializeData();
         });
        
-        document.getElementById('generateLinkButton').addEventListener('click', downloadHtmlTable);
+        document.getElementById('generateLinkButton').addEventListener('click', () => {
+          if (window.ExcelGrid?.applyToTextarea) {
+            ExcelGrid.applyToTextarea(); // מסנכרן לגרסה העדכנית
+          }
+          downloadHtmlTable();
+        });
+        
         document.getElementById('autoScheduleButton').addEventListener('click', () => {
           if (window.ExcelGrid?.applyToTextarea) {
             ExcelGrid.applyToTextarea();
