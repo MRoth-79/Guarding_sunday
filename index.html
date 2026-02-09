@@ -780,6 +780,42 @@ transition: all 0.2s ease;
     /* הסתרה מלאה של עורך הטקסט הישן */
     .textarea-container { display: none !important; 
 }
+
+/* תאריך בתוך כרטיס האקסל */
+.excel-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 14px 0;
+  flex-wrap: wrap;
+}
+
+.excel-date label {
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.excel-date input[type="date"] {
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  color: var(--text-color);
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.excel-date input[type="date"]:hover {
+  border-color: var(--secondary-blue);
+  background-color: #f9fbfb;
+}
+
+.excel-date input[type="date"]:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 5px rgba(0, 121, 107, 0.15);
+}    
     
 </style>
 </head>
@@ -794,7 +830,12 @@ transition: all 0.2s ease;
             <!-- ===== Excel-like Input Card (Drop-in) ===== -->
 <div id="excel-input-card" class="excel-card">
   <div class="excel-card-header">
-    <div class="title">טבלת קלט בסגנון אקסל (הדבקה ישירה)</div>
+    <div class="title">טבלת קלט (הדבקה ישירה)</div>
+    <!-- תאריך התחלה בתוך כרטיס האקסל -->
+    <div class="excel-date">
+      <label for="startDate">תאריך יום ראשון:</label>
+      <input type="date" id="startDate" required>
+    </div>
     <div class="actions">
       <button id="btnExcelPasteHelp" type="button" class="excel-btn tertiary">איך להדביק?</button>
       <button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
@@ -841,12 +882,7 @@ transition: all 0.2s ease;
             </div>
             
             <p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
-           
-            <div class="date-input-container">
-                <label for="startDate">תאריך יום ראשון :</label>
-                <input type="date" id="startDate" required>
-            </div>
-           
+
             <div class="editor-layout-row">
             
             <div class="textarea-container">
