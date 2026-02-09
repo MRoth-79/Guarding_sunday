@@ -816,23 +816,6 @@ transition: all 0.2s ease;
   border-color: var(--primary-blue);
   box-shadow: 0 0 5px rgba(0, 121, 107, 0.15);
 }    
-
-.excel-gsheet-bar {
-    display: flex;
-    gap: 10px;
-    padding: 10px 0 15px 0;
-    flex-wrap: wrap;
-}
-
-.excel-gsheet-bar .excel-btn {
-    background: var(--btn-generate);
-    color: #fff;
-    font-weight: 700;
-}
-
-.google-quick-fetch {
-    background: var(--btn-auto) !important;
-}
     
 </style>
 </head>
@@ -847,17 +830,6 @@ transition: all 0.2s ease;
             <!-- ===== Excel-like Input Card (Drop-in) ===== -->
 <div id="excel-input-card" class="excel-card">
   <div class="excel-card-header">
-      <!-- כפתורי Google Sheets (בר עליון חדש) -->
-<div class="excel-gsheet-bar">
-    <a href="https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0"
-       target="_blank" rel="noopener noreferrer">
-        <button class="excel-btn google-open-sheet">פתח גיליון נתונים 📄</button>
-    </a>
-
-    <button id="quickFetchButton" class="excel-btn google-quick-fetch">
-        משוך נתונים מהיר 🔄
-    </button>
-</div>
     <div class="title">טבלת קלט (הדבקה ישירה)</div>
     <!-- תאריך התחלה בתוך כרטיס האקסל -->
     <div class="excel-date">
@@ -891,6 +863,26 @@ transition: all 0.2s ease;
     טיפ: פסיק או Enter מפרידים בין שמות.
   </div>
 </div>
+
+<h3>משיכת נתונים מ-Google Sheet Web App ☁️</h3>
+
+<p class="file-format-info">
+הכנס את כתובת ה-Web App של Google Apps Script (שמחזירה את נתוני הסידור בפורמט טקסט/CSV)
+</p>
+
+            <div style="text-align: center; margin-bottom: 15px;">
+            <a href="https://docs.google.com/..." target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+            <button class="google-sheet-button">
+            פתח גיליון נתונים (Google Sheets) 📄
+            </button>
+            </a>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 5px; margin-top: 10px;"> <input type="text" id="googleSheetUrl" placeholder="הדבק כאן את כתובת ה-Web App..." style="flex-grow: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; direction: ltr; text-align: left;">
+            <button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
+            </div>
+            
+            <p id="fetch-status" style="text-align: center; display: none; font-weight: bold; margin-top: 10px;"></p>
+
             <div class="editor-layout-row">
             
             <div class="textarea-container">
@@ -2332,6 +2324,7 @@ setupAssistEditors();
             });
             
             // משוך נתונים / משוך מהיר
+            document.getElementById('fetchFromSheetButton').addEventListener('click', fetchFromGoogleSheet);
             document.getElementById('quickFetchButton').addEventListener('click', () => fetchFromGoogleSheet(true));
             
             // כפתור "סדר אוטומטי ↻" מתוך גריד האקסל (בכרטיס)
