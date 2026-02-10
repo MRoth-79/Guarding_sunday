@@ -206,8 +206,28 @@
       font-size:14px; padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; outline:none; background:#fff; transition:.2s;
     }
     .excel-date input[type="date"]:hover{ border-color:var(--secondary-blue); background:#f9fbfb; }
-    .excel-date input[type="date"]:focus{ border-color:var(--primary-blue); box-shadow:0 0 5px rgba(0,121,107,.15); }
-
+    .excel-date input[type="date"]:focus{ border-color:var(--primary-blue); box-shadow:0 0 5px rgba(0,121,107,.15); } 
+                                         
+    /* ============ כרטיס מידע על שם (inspector) ============ */
+    #name-inspector { position: fixed;  top: 20px;  left: 20px; z-index: 9999; width: 320px; max-height: 80vh; overflow: auto; background: #fff;
+      border: 1px solid var(--border-color); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; display: none;}
+    #name-inspector .hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    #name-inspector .hdr .title { font-weight: 800; color: var(--primary-blue); font-size: 1.05rem; }
+    #name-inspector .close-btn { background: transparent; color: #455a64; border: 1px solid #cfd8dc; padding: 4px 8px; border-radius: 8px; cursor: pointer; font-weight: 700; }
+    #name-inspector .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    #name-inspector .kpi { background: #f8fbfb; border: 1px solid #eef2f5; border-radius: 10px; padding: 8px; text-align: center; }
+    #name-inspector .kpi .num { font-size: 1.4rem; font-weight: 900; color: #263238; }
+    #name-inspector .kpi .lbl { font-size: .85rem; color: #607d8b; }
+    #name-inspector .list { border-top: 1px dashed #e0e0e0; padding-top: 10px; }
+    #name-inspector .item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border: 1px solid #eef2f5; border-radius: 8px; margin-bottom: 6px; background: #fff; }
+    #name-inspector .item .left { text-align: right; }
+    #name-inspector .tag { font-size: .75rem; font-weight: 800; background: #ffe0b2; color: #e65100; border: 1px solid #ffcc80; border-radius: 999px; padding: 2px 8px; }
+    #name-inspector .muted { color: #78909c; font-size: .85rem; }
+    @media (max-width: 768px) {
+      #name-inspector { width: calc(100vw - 24px); left: 12px; top: auto; bottom: 12px; }
+}
+      
+    
     /* הודעות */
     #link-message{ display:none; }
   </style>
@@ -298,6 +318,26 @@
 
   <div id="results-container" style="text-align:center;">
     <p id="initial-message">הטעינה הראשונית תפעיל את הניתוח אוטומטית.</p>
+  </div>
+
+  <!-- כרטיס מידע על שם (נפתח בלחיצה על בועה) -->
+  <div id="name-inspector" aria-live="polite" aria-hidden="true">
+    <div class="hdr">
+      <div class="title">פרטי שומר</div>
+      <button class="close-btn" type="button" id="nameInspectorClose">סגור</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="num" id="niTotalShifts">0</div>
+        <div class="lbl">סה״כ משמרות</div>
+      </div>
+      <div class="kpi">
+        <div class="num" id="niAssistCount">0</div>
+        <div class="lbl">ליווי 07:40</div>
+      </div>
+    </div>
+    <div class="muted" id="niPersonName"></div>
+    <div class="list" id="niList"></div>
   </div>
 
   <div id="link-message"><p>✅ קובץ HTML הורד בהצלחה!</p></div>
@@ -1048,9 +1088,24 @@
     }
     document.addEventListener('click', e=>{
       const p=e.target.closest('.person');
-      if (p){ const n=p.textContent.trim(); lockedName = (lockedName===n)? null: n; }
-      else if (!e.target.closest('button') && !e.target.closest('input')) lockedName=null;
-      updateHighlights(lockedName);
+      if (p){
+        const n=p.textContent.trim();
+        lockedName = (lockedName===n)? null: n;
+        updateHighlights(lockedName);
+    
+        // חדש: פתח/עדכן כרטיס מידע
+        if (lockedName){
+          const stats = computeNameStats(lockedName);
+          renderNameInspector(stats);
+        } else {
+          renderNameInspector(null);
+        }
+      }
+      else if (!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('#name-inspector')){
+        lockedName=null;
+        updateHighlights(lockedName);
+        renderNameInspector(null);
+      }
     });
     document.addEventListener('mouseover', e=>{
       const p=e.target.closest('.person');
@@ -1058,6 +1113,120 @@
     });
     document.addEventListener('mouseout', ()=>{
       if (!lockedName && window.matchMedia('(pointer: fine)').matches) updateHighlights(null);
+    });
+
+    
+
+    /* =========================
+     Name Inspector (כרטיס מידע על שם)
+    ========================== */
+    function computeNameStats(targetName){
+      const container = document.getElementById('results-container');
+      const table = container?.querySelector('#schedule-table');
+      if (!container || !table || !targetName) return null;
+    
+      // חיפוש כל הבועות עם אותו שם
+      const bubbles = Array.from(container.querySelectorAll('.person'))
+        .filter(el => el.textContent.trim() === targetName);
+    
+      let totalShifts = 0;      // סה"כ משמרות (ללא ליווי)
+      let assistCount = 0;      // ליווי 07:40
+      const items = [];         // פירוט {day, time, type}
+    
+      bubbles.forEach(b => {
+        const td = b.closest('td');
+        if (!td) return;
+    
+        // האם זה תא ליווי?
+        const isAssist = td.classList.contains('assist-cell');
+    
+        // רמזי יום/זמן:
+        // 1) בתאי המשמרות הרגילים: data-day + data-time על ה-TD
+        // 2) בתאי ליווי: אם חסר, ניקח מה-title של הבועה ("שם - יום, זמן/ליווי")
+        let day = td.getAttribute('data-day') || '';
+        let time = td.getAttribute('data-time') || '';
+    
+        if (!day || !time) {
+          const t = b.getAttribute('title') || '';
+          const m = t.split(' - ');
+          if (m.length >= 2) {
+            const right = m.slice(1).join(' - ');
+            const parts = right.split(',').map(s => s.trim());
+            if (parts[0]) day = parts[0];
+            if (parts[1]) time = parts[1];
+          }
+        }
+    
+        if (isAssist) {
+          assistCount++;
+          items.push({ day, time: time || 'ליווי 07:40', type: 'assist' });
+        } else {
+          totalShifts++;
+          items.push({ day, time, type: 'shift' });
+        }
+      });
+    
+      // מיון כרונולוגי: לפי EXPECTED_DAYS ואז לפי EXPECTED_TIME_SLOTS
+      const dayOrder = new Map(EXPECTED_DAYS.map((d, i) => [d, i]));
+      function timeIndex(t) {
+        if (!t) return 999;
+        const clean = t.replace('<br>', ' - ').replace(/<\/?br>/g, ' - ').trim();
+        const found = EXPECTED_TIME_SLOTS.findIndex(s => clean.startsWith(s.split('(')[0].trim()));
+        return found === -1 ? 998 : found;
+        }
+      items.sort((a, b) => {
+        const da = dayOrder.has(a.day) ? dayOrder.get(a.day) : 997;
+        const db = dayOrder.has(b.day) ? dayOrder.get(b.day) : 997;
+        if (da !== db) return da - db;
+        return timeIndex(a.time) - timeIndex(b.time);
+      });
+    
+      return { name: targetName, totalShifts, assistCount, items };
+    }
+    
+    function renderNameInspector(stats){
+      const box = document.getElementById('name-inspector');
+      if (!box) return;
+      if (!stats) { box.style.display = 'none'; box.setAttribute('aria-hidden','true'); return; }
+    
+      document.getElementById('niTotalShifts').textContent = String(stats.totalShifts);
+      document.getElementById('niAssistCount').textContent = String(stats.assistCount);
+      document.getElementById('niPersonName').textContent = stats.name;
+    
+      const list = document.getElementById('niList');
+      list.innerHTML = '';
+      if (!stats.items.length) {
+        list.innerHTML = '<div class="muted">אין הופעות לשבוע זה.</div>';
+      } else {
+        stats.items.forEach(it => {
+          const row = document.createElement('div');
+          row.className = 'item';
+          row.innerHTML = `
+            <div class="left">
+              <div><strong>${it.day || ''}</strong></div>
+              <div class="muted">${(it.time || '').replace(/<br>/g,' - ')}</div>
+            </div>
+            <div>
+              ${it.type === 'assist' ? '<span class="tag">ליווי</span>' : ''}
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      }
+    
+      box.style.display = 'block';
+      box.setAttribute('aria-hidden','false');
+    }
+    
+    // כפתור סגירה + סגירה בלחיצה מחוץ לשמות/כרטיס
+    document.getElementById('nameInspectorClose')?.addEventListener('click', () => renderNameInspector(null));
+    document.addEventListener('click', (e) => {
+      const isPerson = !!e.target.closest('.person');
+      const isInsideInspector = !!e.target.closest('#name-inspector');
+      const isUIControl = !!(e.target.closest('button') || e.target.closest('input') || e.target.closest('a'));
+      if (!isPerson && !isInsideInspector && !isUIControl) {
+        renderNameInspector(null);
+      }
     });
 
     /* =========================
