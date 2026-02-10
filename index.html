@@ -752,17 +752,102 @@
         .replace(/ data-day-index="[^"]*"/g,'').replace(/ data-day-name="[^"]*"/g,'').replace(/ data-assist-type="[^"]*"/g,'');
 
       const scripts = `
+        // === Spotlight + Name Inspector (exported) ===
+        const EXPECTED_DAYS = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','יום שבת'];
+        const EXPECTED_TIME_SLOTS = [
+          '02:00 - 06:00 (Night)',
+          '06:00 - 10:00',
+          '10:00 - 14:00',
+          '14:00 - 18:00',
+          '18:00 - 22:00',
+          '22:00 - 02:00 (Night)'
+        ];
         let lockedName=null;
-        function updateHighlights(name){ const c=document.getElementById('results-container'); if(!c)return;
+      
+        function updateHighlights(name){
+          const c=document.getElementById('results-container'); if(!c)return;
           if(name) c.classList.add('spotlight-active'); else c.classList.remove('spotlight-active');
           c.querySelectorAll('.person').forEach(el=> el.textContent.trim()===name ? el.classList.add('highlight-name') : el.classList.remove('highlight-name'));
         }
+      
+        function computeNameStats(targetName){
+          const container=document.getElementById('results-container');
+          const table=container?.querySelector('#schedule-table');
+          if(!container||!table||!targetName) return null;
+      
+          const bubbles=[...container.querySelectorAll('.person')].filter(el=> el.textContent.trim()===targetName);
+          let totalShifts=0, assistCount=0; const items=[];
+          bubbles.forEach(b=>{
+            const td=b.closest('td'); if(!td) return;
+            const isAssist=td.classList.contains('assist-cell');
+            let day=td.getAttribute('data-day')||''; let time=td.getAttribute('data-time')||'';
+            if(!day||!time){
+              const t=b.getAttribute('title')||''; const m=t.split(' - ');
+              if(m.length>=2){ const right=m.slice(1).join(' - '); const parts=right.split(',').map(s=>s.trim());
+                if(parts[0]) day=parts[0]; if(parts[1]) time=parts[1];
+              }
+            }
+            if(isAssist){ assistCount++; items.push({day, time: time||'ליווי 07:40', type:'assist'}); }
+            else { totalShifts++; items.push({day, time, type:'shift'}); }
+          });
+      
+          const dayOrder=new Map(EXPECTED_DAYS.map((d,i)=>[d,i]));
+          const timeIndex=t=>{
+            if(!t) return 999;
+            const clean=String(t).replace(/<br\\s*\\/?>(?=)/gi,' - ').trim();
+            const idx=EXPECTED_TIME_SLOTS.findIndex(s=> clean.startsWith(s.split('(')[0].trim()));
+            return idx===-1? 998: idx;
+          };
+          items.sort((a,b)=>{
+            const da=dayOrder.has(a.day)? dayOrder.get(a.day): 997;
+            const db=dayOrder.has(b.day)? dayOrder.get(b.day): 997;
+            if(da!==db) return da-db;
+            return timeIndex(a.time)-timeIndex(b.time);
+          });
+      
+          return { name: targetName, totalShifts, assistCount, items };
+        }
+      
+        function renderNameInspector(stats){
+          const box=document.getElementById('name-inspector'); if(!box) return;
+          if(!stats){ box.style.display='none'; box.setAttribute('aria-hidden','true'); return; }
+          const byId=id=>document.getElementById(id);
+          byId('niTotalShifts').textContent=String(stats.totalShifts);
+          byId('niAssistCount').textContent=String(stats.assistCount);
+          byId('niPersonName').textContent=stats.name;
+          const list=byId('niList'); list.innerHTML='';
+          if(!stats.items.length){ list.innerHTML='<div class="muted">אין הופעות לשבוע זה.</div>'; }
+          else{
+            stats.items.forEach(it=>{
+              const row=document.createElement('div');
+              row.className='item';
+              row.innerHTML =
+                '<div class="left">' +
+                  '<div><strong>' + (it.day || '') + '</strong></div>' +
+                  '<div class="muted">' + String(it.time||'').replace(/<br\\s*\\/?>(?=)/gi,' - ') + '</div>' +
+                '</div>' +
+                '<div>' + (it.type==='assist' ? '<span class="tag">ליווי</span>' : '') + '</div>';
+              list.appendChild(row);
+            });
+          }
+          box.style.display='block';
+          box.setAttribute('aria-hidden','false');
+        }
+      
         document.addEventListener('click',e=>{
           const p=e.target.closest('.person');
-          if(p){ const n=p.textContent.trim(); lockedName=(lockedName===n)?null:n; }
-          else if(!e.target.closest('button')) lockedName=null;
-          updateHighlights(lockedName);
+          if(p){
+            const n=p.textContent.trim();
+            lockedName=(lockedName===n)? null: n;
+            updateHighlights(lockedName);
+            if(lockedName){ const stats=computeNameStats(lockedName); renderNameInspector(stats); }
+            else { renderNameInspector(null); }
+          } else if(!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('#name-inspector')){
+            lockedName=null; updateHighlights(lockedName); renderNameInspector(null);
+          }
         });
+        document.getElementById('nameInspectorClose')?.addEventListener('click',()=> renderNameInspector(null));
+      
         function autoFitTable(){
           const c=document.getElementById('results-container'); const t=document.getElementById('schedule-table'); if(!c||!t) return;
           c.style.transformOrigin='top right'; c.style.transform='scale(1)'; c.style.width='100%';
@@ -772,9 +857,11 @@
         addEventListener('load',autoFitTable); addEventListener('resize',autoFitTable);
       `;
 
+
       const content = `
         <!DOCTYPE html><html lang="he" dir="rtl"><head>
-          <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0"/>
+          <meta charset="UTF-8"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0"/>
           <title>${header}</title>
           <style>
             ${style}
@@ -789,6 +876,27 @@
         </head><body>
           <h1 class="modern-main-header" style="font-size:1.5em; padding:10px;">${header}</h1>
           <div id="results-container">${exportTableHTML}</div>
+        
+          <!-- כרטיס מידע על שם (גם בקובץ המיוצא) -->
+          <div id="name-inspector" aria-live="polite" aria-hidden="true">
+            <div class="hdr">
+              <div class="title">פרטי שומר</div>
+              <button class="close-btn" type="button" id="nameInspectorClose">סגור</button>
+            </div>
+            <div class="kpis">
+              <div class="kpi">
+                <div class="num" id="niTotalShifts">0</div>
+                <div class="lbl">סה״כ משמרות</div>
+              </div>
+              <div class="kpi">
+                <div class="num" id="niAssistCount">0</div>
+                <div class="lbl">ליווי 07:40</div>
+              </div>
+            </div>
+            <div class="muted" id="niPersonName"></div>
+            <div class="list" id="niList"></div>
+          </div>
+        
           <script>${scripts}<\/script>
         </body></html>`;
 
@@ -1170,10 +1278,10 @@
       const dayOrder = new Map(EXPECTED_DAYS.map((d, i) => [d, i]));
       function timeIndex(t) {
         if (!t) return 999;
-        const clean = t.replace('<br>', ' - ').replace(/<\/?br>/g, ' - ').trim();
+        const clean = String(t).replace(/<br\s*\/?>/gi, ' - ').trim();
         const found = EXPECTED_TIME_SLOTS.findIndex(s => clean.startsWith(s.split('(')[0].trim()));
         return found === -1 ? 998 : found;
-        }
+    }
       items.sort((a, b) => {
         const da = dayOrder.has(a.day) ? dayOrder.get(a.day) : 997;
         const db = dayOrder.has(b.day) ? dayOrder.get(b.day) : 997;
