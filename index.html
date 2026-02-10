@@ -488,7 +488,7 @@ textarea:focus {
   border-bottom: 3px solid #000000 !important;
 }
 .red-assistance-shift td:first-child { border-right: 3px solid #000000 !important; }
-.red-assistance-shift td:last-child  { border-left:  3px solid #000000 !important; }
+.red-assistance-shift td:last-child  { border-left:  3px solid #000000 !-important; }
 .red-assistance-shift td.time-slot {
   background-color: var(--secondary-blue) !important;
   color: white !important;
@@ -886,7 +886,7 @@ document.getElementById('googleSheetUrl').value = savedUrl;
 
 
 function escapeHtml(s) {
-return String(s).replace(/[&<>"']/g, m => (
+return String(s).replace(/[&<>\"']/g, m => (
 { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
 ));
 }
@@ -1479,27 +1479,26 @@ return a.localeCompare(b, 'he');
                     `<span class="night-limit-fail">❌ ${night2to6Count}</span>` :
                     `<span class="night-limit-ok">✅ ${night2to6Count}</span>`;
 
-
-        // בדיקת עמידה בתנאי החדש (5 עד 6 משמרות)
-        if (count === MAX_ALLOWED) {
-        rowClass = 'shifts-5-count'; // חזותית: שימוש בכיתה קיימת
-        statusText = `✅ עמד (${MAX_ALLOWED} משמרות - מקסימום)`;
-        } else if (count === (MAX_ALLOWED - 1)) {
-        rowClass = 'shifts-4-count'; // שימוש בכיתה קיימת לטווח שמתחת
-        statusText = `✅ עמד (${MAX_ALLOWED - 1} משמרות)`;
-        } else if (count < MIN_REQUIRED) {
-        rowClass = 'low-shifts'; // אדום
-        statusText = `❌ לא עמד (פחות מ-${MIN_REQUIRED} - ${count})`;
-        } else if (count > MAX_ALLOWED) {
-        rowClass = 'not-met-condition';
-        statusText = `❌ איסור! (יותר מדי - ${count})`;
-        exceptions.push({
-        day: "סיכום שבועי",
-        slot: "מכסת משמרות",
-        name: name,
-        msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MAX_ALLOWED})`
-        });
-        }
+// (תיקון טקסט) עמידה בתנאי: 4–5 משמרות
+if (count === MAX_ALLOWED) {
+rowClass = 'shifts-5-count'; // חזותית: שימוש בכיתה קיימת
+statusText = `✅ עמד (${MAX_ALLOWED} משמרות - מקסימום)`;
+} else if (count === (MAX_ALLOWED - 1)) {
+rowClass = 'shifts-4-count'; // שימוש בכיתה קיימת לטווח שמתחת
+statusText = `✅ עמד (${MAX_ALLOWED - 1} משמרות)`;
+} else if (count < MIN_REQUIRED) {
+rowClass = 'low-shifts'; // אדום
+statusText = `❌ לא עמד (פחות מ-${MIN_REQUIRED} - ${count})`;
+} else if (count > MAX_ALLOWED) {
+rowClass = 'not-met-condition';
+statusText = `❌ איסור! (יותר מדי - ${count})`;
+exceptions.push({
+day: "סיכום שבועי",
+slot: "מכסת משמרות",
+name: name,
+msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MAX_ALLOWED})`
+});
+}
 
                 // הוספת קלאס התראה גם אם חרגו ממשמרת הלילה הספציפית
                 if (night2to6Count > MAX_NIGHT_2_6) {
@@ -1520,46 +1519,45 @@ return a.localeCompare(b, 'he');
             summaryTableHTML += '</tbody></table>';
            
 
-        // --- בניית טבלת החריגות (מעל הסיכום) ---
-        let exceptionsTableHTML = `
-        <div style="text-align: center; margin-top: 20px;">
-        <h3 id="exceptions-header">⚠️ ריכוז חריגות ואזהרות</h3>
-        </div>
-        <table id="exceptions-table">
-        <thead>
-        <tr>
-        <th>יום</th>
-        <th>משמרת</th>
-        <th>עובד</th>
-        <th>פירוט החריגה</th>
-        </tr>
-        </thead>
-        <tbody>`;
-        
-        if (exceptions.length === 0) {
-        exceptionsTableHTML += `<tr><td colspan="4">אין חריגות בסידור! ✅</td></tr>`;
-        } else {
-        exceptions.forEach(ex => {
-        exceptionsTableHTML += `<tr>
-        <td>${ex.day}</td>
-        <td>${ex.slot}</td>
-        <td><b>${ex.name}</b></td>
-        <td>${ex.msg}</td>
-        </tr>`;
-        });
-        }
-        exceptionsTableHTML += `</tbody></table><hr>`;
-        
-        // --- החיבור הסופי לפי הסדר המבוקש ---
-        // קודם כל הטבלה הראשית שכבר נמצאת בתוך tableHTML
-        // עכשיו מוסיפים את החריגות, ורק אז את הסיכום
-        tableHTML += exceptionsTableHTML + summaryTableHTML;
-        
-        // הצגת התוצאה הסופית במסך
-        resultsContainer.innerHTML = tableHTML;
-        setupAssistEditors();
-        }
+// --- בניית טבלת החריגות (מעל הסיכום) ---
+let exceptionsTableHTML = `
+<div style="text-align: center; margin-top: 20px;">
+<h3 id="exceptions-header">⚠️ ריכוז חריגות ואזהרות</h3>
+</div>
+<table id="exceptions-table">
+<thead>
+<tr>
+<th>יום</th>
+<th>משמרת</th>
+<th>עובד</th>
+<th>פירוט החריגה</th>
+</tr>
+</thead>
+<tbody>`;
 
+if (exceptions.length === 0) {
+exceptionsTableHTML += `<tr><td colspan="4">אין חריגות בסידור! ✅</td></tr>`;
+} else {
+exceptions.forEach(ex => {
+exceptionsTableHTML += `<tr>
+<td>${ex.day}</td>
+<td>${ex.slot}</td>
+<td><b>${ex.name}</b></td>
+<td>${ex.msg}</td>
+</tr>`;
+});
+}
+exceptionsTableHTML += `</tbody></table><hr>`;
+
+// --- החיבור הסופי לפי הסדר המבוקש ---
+// קודם כל הטבלה הראשית שכבר נמצאת בתוך tableHTML
+// עכשיו מוסיפים את החריגות, ורק אז את הסיכום
+tableHTML += exceptionsTableHTML + summaryTableHTML;
+
+// הצגת התוצאה הסופית במסך
+resultsContainer.innerHTML = tableHTML;
+setupAssistEditors();
+        }
 
         /**
          * פונקציה מעודכנת להורדת קובץ HTML שמכיל רק את הטבלה המעוצבת - כולל תאריכים
@@ -1743,8 +1741,8 @@ return a.localeCompare(b, 'he');
                 dailyOccupancy = initialParsedData.days.map(() => new Set());
                 daily8HourBreakRequired = initialParsedData.days.map(() => new Set());
                 availabilityMap = {};
-
-                // 2.a ליווי 07:40 – תופס את היום (חוסם שיבוץ נוסף באותו יום)
+               
+                // 🔧 FIX (1/2): ליווי 07:40 תופס את היום — נטען מה-localStorage ומחסמים יום
                 try {
                   const assistValues = loadAssistArray(); // ['שם1, שם2', ...] אורך 7
                   assistValues.forEach((csv, dayIdx) => {
@@ -1755,14 +1753,14 @@ return a.localeCompare(b, 'he');
                 } catch (e) {
                   console.warn('assist preload failed', e);
                 }
-               
+                // --- סוף תיקון ---
+
                 // סטי החסימות החדשים (נבנים מחדש בכל איטרציה על בסיס newScheduleData)
                 let night22_02_block = initialParsedData.days.map(() => new Set());
                 let night02_06_block = initialParsedData.days.map(() => new Set());
 
                 const shiftsToFill = []; // המשבצות שצריך למלא באיטרציה זו
                 let assistanceShiftsDone = new Set(); // **חדש: מעקב אחרי משמרות ליווי**
-
 
                 // 2. איסוף נתוני זמינות והעתקת שיבוץ ידני
                 let mustStop = false;
@@ -1803,7 +1801,6 @@ return a.localeCompare(b, 'he');
                 // עבור איטרציות עתידיות: משתמשים בשיבוץ שכבר נקבע
                 namesInSlot = newScheduleData[shiftIndex][dayIndex];
                 }
-                
                                         namesInSlot.forEach(name => {
                                             if (allEmployees.includes(name)) {
                 // סופר את כל המשמרות, כולל ליווי
@@ -1838,7 +1835,6 @@ return a.localeCompare(b, 'he');
                                 }
                             }
                         });
-
 
                                 // הרובוט ימלא משמרת רק אם היא לא משמרת ליווי (Assist) והיא לא מלאה
                                 if (!isAssistanceShift && newScheduleData[shiftIndex][dayIndex].length < required) {
@@ -1994,24 +1990,25 @@ return a.localeCompare(b, 'he');
 
                 // הרצת סבב 2: מילוי שאר המשבצות עם שאר העובדים
                 shiftsToFill.forEach(shift => fillShiftLogic(shift, false));
-                
-                // 6. בדיקת תנאי עצירה - האם כולם עמדו במינימום?
+
+                // 🔧 FIX (2/2): תנאי עצירה שמתעדכן אחרי המילוי בפועל
                 const employeesBelowMin = allEmployees.filter(name => (employeeShiftsCount[name] || 0) < MIN_REQUIRED);
-                
+
                 // בדיקה עדכנית: האם נשארו משבצות לא מלאות אחרי המילוי באיטרציה זו
                 const anyUnfilled = newScheduleData.some((row, shiftIdx) => {
-                  const required = (shiftIdx === NIGHT_SHIFT_2_6_INDEX || shiftIdx === NIGHT_SHIFT_22_2_INDEX) ? 2 : 1;
-                  return row.some(arr => arr.length < required);
+                  const requiredHere = (shiftIdx === NIGHT_SHIFT_2_6_INDEX || shiftIdx === NIGHT_SHIFT_22_2_INDEX) ? 2 : 1;
+                  return row.some(arr => arr.length < requiredHere);
                 });
-                
+
                 if (!anyUnfilled && employeesBelowMin.length === 0) {
                   break;
                 }
-                
+
                 if (iteration === MAX_ITERATIONS - 1) {
                   console.warn("MAX ITERATIONS REACHED. CHECKING FINAL RESULTS.");
                   break;
                 }
+                // --- סוף תיקון ---
             } // --- סוף לולאת האיטרציה הראשית ---
            
             // **שלב 4: בניית טקסט הקלט מחדש והצגה (לאחר האיטרציות)**
@@ -2329,7 +2326,7 @@ return a.localeCompare(b, 'he');
   }
 
   function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    return String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
   function renderGrid(){
@@ -2480,7 +2477,7 @@ return a.localeCompare(b, 'he');
     el('btnExcelLoadFromText').onclick = loadFromTextarea;
     el('btnExcelApplyToText').onclick = applyToTextarea;
     el('btnExcelClear').onclick = clearGrid;
-    el('btnExcelPasteHelp').onclick = ()=> {
+    el('btnExcelPasteHelp').onclick = ()=>{
       const box = el('excelPasteHelp');
       box.hidden = !box.hidden;
     };
