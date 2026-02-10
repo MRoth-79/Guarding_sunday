@@ -816,11 +816,15 @@ const EXPECTED_TIME_SLOTS = [
         const AFTERNOON_SHIFT_14_18_INDEX = 3;
         const NIGHT_SHIFT_22_2_INDEX = 5;  // לילה מוקדם
 
-    // עדכון בדיקת משמרות עוקבות (מניעת רצף מסוכן)
-        const CONSECUTIVE_SHIFT_CHECK = {
-            [4]: 3, // משמרת 18-22 בודקת את 14-18
-            [5]: 4  // משמרת 22-02 בודקת את 18-22
-        };
+    // עדכון בדיקת משמרות עוקבות (8 שעות מנוחה מינימום)
+    // לכל משבצת נציין את המשבצת שלפניה באותו היום שאסור לקבל בעקבותיה:
+    // 10–14 בודקת 06–10, 14–18 בודקת 10–14, 18–22 בודקת 14–18, 22–02 בודקת 18–22
+    const CONSECUTIVE_SHIFT_CHECK = {
+      [2]: 1, // 10-14 -> לא אחרי 06-10
+      [3]: 2, // 14-18 -> לא אחרי 10-14
+      [4]: 3, // 18-22 -> לא אחרי 14-18
+      [5]: 4  // 22-02 -> לא אחרי 18-22
+    };
 
         // מפת צבעים (רשימת העובדים הזמינים לסידור)
         const colorMap = {
@@ -1476,26 +1480,26 @@ return a.localeCompare(b, 'he');
                     `<span class="night-limit-ok">✅ ${night2to6Count}</span>`;
 
 
-// בדיקת עמידה בתנאי החדש (5 עד 6 משמרות)
-if (count === MAX_ALLOWED) {
-rowClass = 'shifts-5-count'; // חזותית: שימוש בכיתה קיימת
-statusText = `✅ עמד (${MAX_ALLOWED} משמרות - מקסימום)`;
-} else if (count === (MAX_ALLOWED - 1)) {
-rowClass = 'shifts-4-count'; // שימוש בכיתה קיימת לטווח שמתחת
-statusText = `✅ עמד (${MAX_ALLOWED - 1} משמרות)`;
-} else if (count < MIN_REQUIRED) {
-rowClass = 'low-shifts'; // אדום
-statusText = `❌ לא עמד (פחות מ-${MIN_REQUIRED} - ${count})`;
-} else if (count > MAX_ALLOWED) {
-rowClass = 'not-met-condition';
-statusText = `❌ איסור! (יותר מדי - ${count})`;
-exceptions.push({
-day: "סיכום שבועי",
-slot: "מכסת משמרות",
-name: name,
-msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MAX_ALLOWED})`
-});
-}
+        // בדיקת עמידה בתנאי החדש (5 עד 6 משמרות)
+        if (count === MAX_ALLOWED) {
+        rowClass = 'shifts-5-count'; // חזותית: שימוש בכיתה קיימת
+        statusText = `✅ עמד (${MAX_ALLOWED} משמרות - מקסימום)`;
+        } else if (count === (MAX_ALLOWED - 1)) {
+        rowClass = 'shifts-4-count'; // שימוש בכיתה קיימת לטווח שמתחת
+        statusText = `✅ עמד (${MAX_ALLOWED - 1} משמרות)`;
+        } else if (count < MIN_REQUIRED) {
+        rowClass = 'low-shifts'; // אדום
+        statusText = `❌ לא עמד (פחות מ-${MIN_REQUIRED} - ${count})`;
+        } else if (count > MAX_ALLOWED) {
+        rowClass = 'not-met-condition';
+        statusText = `❌ איסור! (יותר מדי - ${count})`;
+        exceptions.push({
+        day: "סיכום שבועי",
+        slot: "מכסת משמרות",
+        name: name,
+        msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MAX_ALLOWED})`
+        });
+        }
 
                 // הוספת קלאס התראה גם אם חרגו ממשמרת הלילה הספציפית
                 if (night2to6Count > MAX_NIGHT_2_6) {
@@ -1516,44 +1520,44 @@ msg: `חריגה: ${count} משמרות (המקסימום המותר הוא ${MA
             summaryTableHTML += '</tbody></table>';
            
 
-// --- בניית טבלת החריגות (מעל הסיכום) ---
-let exceptionsTableHTML = `
-<div style="text-align: center; margin-top: 20px;">
-<h3 id="exceptions-header">⚠️ ריכוז חריגות ואזהרות</h3>
-</div>
-<table id="exceptions-table">
-<thead>
-<tr>
-<th>יום</th>
-<th>משמרת</th>
-<th>עובד</th>
-<th>פירוט החריגה</th>
-</tr>
-</thead>
-<tbody>`;
-
-if (exceptions.length === 0) {
-exceptionsTableHTML += `<tr><td colspan="4">אין חריגות בסידור! ✅</td></tr>`;
-} else {
-exceptions.forEach(ex => {
-exceptionsTableHTML += `<tr>
-<td>${ex.day}</td>
-<td>${ex.slot}</td>
-<td><b>${ex.name}</b></td>
-<td>${ex.msg}</td>
-</tr>`;
-});
-}
-exceptionsTableHTML += `</tbody></table><hr>`;
-
-// --- החיבור הסופי לפי הסדר המבוקש ---
-// קודם כל הטבלה הראשית שכבר נמצאת בתוך tableHTML
-// עכשיו מוסיפים את החריגות, ורק אז את הסיכום
-tableHTML += exceptionsTableHTML + summaryTableHTML;
-
-// הצגת התוצאה הסופית במסך
-resultsContainer.innerHTML = tableHTML;
-setupAssistEditors();
+        // --- בניית טבלת החריגות (מעל הסיכום) ---
+        let exceptionsTableHTML = `
+        <div style="text-align: center; margin-top: 20px;">
+        <h3 id="exceptions-header">⚠️ ריכוז חריגות ואזהרות</h3>
+        </div>
+        <table id="exceptions-table">
+        <thead>
+        <tr>
+        <th>יום</th>
+        <th>משמרת</th>
+        <th>עובד</th>
+        <th>פירוט החריגה</th>
+        </tr>
+        </thead>
+        <tbody>`;
+        
+        if (exceptions.length === 0) {
+        exceptionsTableHTML += `<tr><td colspan="4">אין חריגות בסידור! ✅</td></tr>`;
+        } else {
+        exceptions.forEach(ex => {
+        exceptionsTableHTML += `<tr>
+        <td>${ex.day}</td>
+        <td>${ex.slot}</td>
+        <td><b>${ex.name}</b></td>
+        <td>${ex.msg}</td>
+        </tr>`;
+        });
+        }
+        exceptionsTableHTML += `</tbody></table><hr>`;
+        
+        // --- החיבור הסופי לפי הסדר המבוקש ---
+        // קודם כל הטבלה הראשית שכבר נמצאת בתוך tableHTML
+        // עכשיו מוסיפים את החריגות, ורק אז את הסיכום
+        tableHTML += exceptionsTableHTML + summaryTableHTML;
+        
+        // הצגת התוצאה הסופית במסך
+        resultsContainer.innerHTML = tableHTML;
+        setupAssistEditors();
         }
 
 
@@ -1739,6 +1743,18 @@ setupAssistEditors();
                 dailyOccupancy = initialParsedData.days.map(() => new Set());
                 daily8HourBreakRequired = initialParsedData.days.map(() => new Set());
                 availabilityMap = {};
+
+                // 2.a ליווי 07:40 – תופס את היום (חוסם שיבוץ נוסף באותו יום)
+                try {
+                  const assistValues = loadAssistArray(); // ['שם1, שם2', ...] אורך 7
+                  assistValues.forEach((csv, dayIdx) => {
+                    toNameArray(csv).forEach(n => {
+                      if (n) dailyOccupancy[dayIdx].add(n);
+                    });
+                  });
+                } catch (e) {
+                  console.warn('assist preload failed', e);
+                }
                
                 // סטי החסימות החדשים (נבנים מחדש בכל איטרציה על בסיס newScheduleData)
                 let night22_02_block = initialParsedData.days.map(() => new Set());
@@ -1848,47 +1864,54 @@ setupAssistEditors();
                
                 // 4. פונקציית ניקוד מורכבת
                 // בתוך פונקציית autoSchedule, תחת פונקציית scoreEmployee:
-                function scoreEmployee(name, count, dayIndex, shiftIndex) {
-                    let score = 0;
-
-                    // --- הוספה: חסימת מכסת לילות 02:00-06:00 (לא יותר מ-2 בשבוע) ---
-                    if (shiftIndex === NIGHT_SHIFT_2_6_INDEX && (nightShift2to6Count[name] || 0) >= MAX_NIGHT_2_6) {
-                        return -3000000; // ציון שלילי גבוה מאוד שמונע מהרובוט לבחור בשומר זה
-                    }
-
-                    // הגדרת יעד אישי
-                    let personalTarget = guardsFor5Set.has(name) ? 5 : MIN_REQUIRED;
-
-                    // 1. עדיפות קריטית למי שטרם הגיע ליעד שלו (ובמיוחד לאלו של 5-6 משמרות)
+                function scoreEmployee(name, count, dayIndex, shiftIndex, equalizeMode = false) {
+                  // חסימות קשיחות קודם
+                  // תקרת 02–06 (לא יותר מ-2 בשבוע)
+                  if (shiftIndex === NIGHT_SHIFT_2_6_INDEX && (nightShift2to6Count[name] || 0) >= MAX_NIGHT_2_6) {
+                    return -3000000;
+                  }
+                
+                  // אין שתי משמרות באותו יום + אין רצף צמוד באותו יום
+                  if (dailyOccupancy[dayIndex].has(name) || daily8HourBreakRequired[dayIndex].has(name)) {
+                    return -1000000;
+                  }
+                
+                  // מנוחת לילה בין ימים:
+                  // 22–02 אתמול -> אסור 06–10 / 10–14 היום
+                  if (night22_02_block[dayIndex].has(name) &&
+                      (shiftIndex === MORNING_SHIFT_6_10_INDEX || shiftIndex === MORNING_SHIFT_10_14_INDEX)) {
+                    return -2000000;
+                  }
+                
+                  // חסימת רצף לילות: 22–02 אתמול -> 02–06 היום
+                  if (night22_02_block[dayIndex].has(name) && shiftIndex === NIGHT_SHIFT_2_6_INDEX) {
+                    return -2000000;
+                  }
+                
+                  // 02–06 היום -> אסור 06–10 / 10–14 / 14–18 היום
+                  if (night02_06_block[dayIndex].has(name) && (shiftIndex <= AFTERNOON_SHIFT_14_18_INDEX)) {
+                    return -2000000;
+                  }
+                
+                  // תקרת מקסימום שבועית
+                  if ((employeeShiftsCount[name] || 0) >= MAX_ALLOWED) {
+                    return -500000;
+                  }
+                
+                  // ניקוד
+                  let score = 0;
+                  const personalTarget = guardsFor5Set.has(name) ? 5 : MIN_REQUIRED;
+                
+                  if (!equalizeMode) {
+                    // סבב 1: דוחפים חזק להגיע ליעד האישי (צהובים ל-5, אחרים ל-4)
                     if (count < personalTarget) {
-                        // בונוס משמעותי שמבטיח שהם ייבחרו לפני אחרים
-                        score += 5000 * (personalTarget - count);
+                      score += 100000 * (personalTarget - count);
                     }
-
-                    // 2. עדיפות משנית למי ששמר פחות באופן כללי (לאיזון)
-                    score += (MAX_ALLOWED - count) * 10;
-
-                    // --- חסימות קריטיות (עונשים כהבדים מאוד - מונעים שיבוץ לא חוקי) ---
-
-                    // חסימת כפילות יומית או הפרת מנוחת 8 שעות (חובה!)
-                    if (dailyOccupancy[dayIndex].has(name) || daily8HourBreakRequired[dayIndex].has(name)) {
-                        return -1000000;
-                    }
-
-                    // חסימות מנוחת לילה (החוקים הקשיחים שלך)
-                    if (night22_02_block[dayIndex].has(name) && (shiftIndex === MORNING_SHIFT_6_10_INDEX || shiftIndex === MORNING_SHIFT_10_14_INDEX)) {
-                        return -2000000;
-                    }
-                    if (night02_06_block[dayIndex].has(name) && (shiftIndex <= AFTERNOON_SHIFT_14_18_INDEX)) {
-                        return -2000000;
-                    }
-
-                    // הגבלת מכסת מקסימום אבסולוטית (5)
-                    if (count >= MAX_ALLOWED) {
-                        return -500000;
-                    }
-
-                    return score;
+                  }
+                  // בכל מקרה: איזון – מי שפחות עבד קודם
+                  score += (MAX_ALLOWED - count) * 1000;
+                
+                  return score;
                 }
 
                 // 5. מילוי המשמרות החסרות
@@ -1920,9 +1943,15 @@ setupAssistEditors();
                    
                     while (needed > 0 && filteredCandidates.length > 0) {
                         const scoredCandidates = filteredCandidates.map(name => {
-                            const currentCount = employeeShiftsCount[name] || 0;
-                            const score = scoreEmployee(name, currentCount, dayIndex, shiftIndex);
-                            return { name, score };
+                          const currentCount = employeeShiftsCount[name] || 0;
+                          const score = scoreEmployee(
+                            name,
+                            currentCount,
+                            dayIndex,
+                            shiftIndex,
+                            !onlyGuardsFor5 // בסבב השני עוברים למצב איזון "שווה בשווה"
+                          );
+                          return { name, score };
                         });
 
                         scoredCandidates.sort((a, b) => b.score - a.score);
@@ -1965,18 +1994,23 @@ setupAssistEditors();
 
                 // הרצת סבב 2: מילוי שאר המשבצות עם שאר העובדים
                 shiftsToFill.forEach(shift => fillShiftLogic(shift, false));
-
+                
                 // 6. בדיקת תנאי עצירה - האם כולם עמדו במינימום?
-                const employeesBelowMin = allEmployees.filter(name => employeeShiftsCount[name] < MIN_REQUIRED);
-                const unfilledShifts = shiftsToFill.length;
-               
-                if (unfilledShifts === 0 && employeesBelowMin.length === 0) {
-                    break;
+                const employeesBelowMin = allEmployees.filter(name => (employeeShiftsCount[name] || 0) < MIN_REQUIRED);
+                
+                // בדיקה עדכנית: האם נשארו משבצות לא מלאות אחרי המילוי באיטרציה זו
+                const anyUnfilled = newScheduleData.some((row, shiftIdx) => {
+                  const required = (shiftIdx === NIGHT_SHIFT_2_6_INDEX || shiftIdx === NIGHT_SHIFT_22_2_INDEX) ? 2 : 1;
+                  return row.some(arr => arr.length < required);
+                });
+                
+                if (!anyUnfilled && employeesBelowMin.length === 0) {
+                  break;
                 }
-               
+                
                 if (iteration === MAX_ITERATIONS - 1) {
-                    console.warn("MAX ITERATIONS REACHED. CHECKING FINAL RESULTS.");
-                    break;
+                  console.warn("MAX ITERATIONS REACHED. CHECKING FINAL RESULTS.");
+                  break;
                 }
             } // --- סוף לולאת האיטרציה הראשית ---
            
@@ -2125,6 +2159,11 @@ setupAssistEditors();
                   ExcelGrid.loadFromTextarea();   // ממלא את הגריד מתוך הטקסט
                 } else {
                   console.warn('ExcelGrid.loadFromTextarea() לא נמצא.');
+                }
+                
+                const rc = document.getElementById('results-container');
+                if (rc) {
+                  rc.innerHTML = '<p style="text-align:center; font-weight:600; color: var(--primary-blue);">✅ הנתונים נטענו לטבלת הקלט. כעת לחץ "סדר אוטומטי ↻" כדי לייצר את טבלת המשמרות.</p>';
                 }
                 
                 // לא מנתחים כאן אוטומטית. המשתמש ילחץ "סדר אוטומטי ↻" או "נתח נתונים".
