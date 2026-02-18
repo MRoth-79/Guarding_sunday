@@ -475,23 +475,36 @@
       const arr = loadAssistArray(); arr[dayIdx] = matched.join(', '); saveAssistArray(arr);
       placeCaretAtEnd(cell);
     }
-    function setupAssistEditors(){
-      document.querySelectorAll('.assist-cell[contenteditable="true"]').forEach(cell=>{
-        cell.addEventListener('keydown', e=>{
-          if (e.key==='Enter'){ e.preventDefault(); e.stopPropagation();
-            convertAssistCellToBubbles(cell); appendSeparatorAndFocus(cell, ', ');
-            const btn = document.getElementById('analyzeButton');
-            if (btn) btn.click(); else {
-              if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea();
-              const txt = document.getElementById('dataToAnalyze')?.value || '';
-              renderSchedule(parseVerticalText(txt));
-            }
-          } else if (e.key===','){ e.preventDefault(); e.stopPropagation(); convertAssistCellToBubbles(cell); appendSeparatorAndFocus(cell, ' '); }
-        });
-        cell.addEventListener('blur', ()=>convertAssistCellToBubbles(cell));
-        cell.addEventListener('paste', ()=> setTimeout(()=>{ convertAssistCellToBubbles(cell); appendSeparatorAndFocus(cell,' '); }, 0));
-      });
-    }
+	
+	function setupAssistEditors() {
+	  document.querySelectorAll('.assist-cell[contenteditable="true"]').forEach(cell => {
+		cell.addEventListener('keydown', e => {
+		  if (e.key === 'Enter') {
+			e.preventDefault(); // מונע ירידת שורה
+			
+			// שליפת השמות שהוקלדו
+			const rawText = cell.innerText;
+			const names = rawText.split(/[,\n]/).map(n => n.trim()).filter(Boolean);
+			const dayName = cell.dataset.dayName || "";
+			
+			// הפיכה לבועות צבעוניות בלי לרענן את כל הטבלה
+			cell.innerHTML = renderPersonBubbles(names, dayName, 'ליווי 07:40');
+			
+			cell.blur(); // סיום עריכה
+			
+			// עדכון ה-Textarea מאחורי הקלעים כדי שהשינוי יישמר
+			if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea();
+		  }
+		});
+		
+		// ניקוי אוטומטי כשיוצאים מהתא בלי ללחוץ אנטר
+		cell.addEventListener('blur', () => {
+			const names = cell.innerText.split(/[,\n]/).map(n => n.trim()).filter(Boolean);
+			const dayName = cell.dataset.dayName || "";
+			cell.innerHTML = renderPersonBubbles(names, dayName, 'ליווי 07:40');
+		});
+	  });
+	}
 
     /* =========================
        קריאת טקסט: פורמט אנכי (ימים→שעות→שמות)
@@ -669,7 +682,7 @@
             return `<span class="person ${cls}" title="${title}">${escapeHtml(clean)}</span>`;
           }).join('');
 
-          scheduleTableHTML += `<td data-day="${day}" data-time="${timeDisp}" class="${cellClass}">${formatted} ${warn}</td>`;
+          scheduleTableHTML += `<td data-day="${day}" data-time="${timeDisp}" class="${cellClass}" contenteditable="true">${formatted} ${warn}</td>`;
         });
 
         scheduleTableHTML += '</tr>';
@@ -729,6 +742,7 @@
 
       rc.innerHTML = scheduleTableHTML + '<hr>' + exceptionsTableHTML + summaryTableHTML;
       setupAssistEditors();
+	  setupTableLiveEditing();
     }
 
     /* =========================
@@ -1459,6 +1473,29 @@
       ExcelGrid.init();
       // אין ניתוח אוטומטי: המשתמש ילחץ "משוך נתונים" / "נתח נתונים" / "סדר אוטומטי".
     });
+	
+	function setupTableLiveEditing() {
+		// מאזין לכל התאים בטבלה (משמרות רגילות)
+		const allCells = document.querySelectorAll('#schedule-table td[contenteditable="true"]:not(.assist-cell)');
+		
+		allCells.forEach(cell => {
+			cell.addEventListener('keydown', e => {
+				if (e.key === 'Enter') {
+					e.preventDefault(); // מונע ירידת שורה
+					
+					const names = cell.innerText.split(/[,\n]/).map(n => n.trim()).filter(Boolean);
+					const dayLabel = cell.dataset.day || "";
+					const timeLabel = (cell.dataset.time || "").replace('<br>', ' ');
+					
+					// הפיכה לבועות מעוצבות
+					cell.innerHTML = renderPersonBubbles(names, dayLabel, timeLabel);
+					
+					cell.blur(); // מוציא פוקוס כדי לשמור
+					if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea(); 
+				}
+			});
+		});
+	}
   </script>
 </body>
 </html>
