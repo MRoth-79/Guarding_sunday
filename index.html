@@ -83,7 +83,7 @@
     #schedule-table thead{ background:var(--primary-blue); color:#fff; letter-spacing:1px; font-weight:700; }
     #schedule-table thead th{ border-color:#78909c; border-bottom-width:2px; }
     #schedule-table th,#schedule-table td{
-      width:12.5% !important; box-sizing:border-box !important; white-space:nowrap !important; text-overflow:ellipsis; overflow:hidden !important;
+      width:12.5% !important; box-sizing:border-box !important; white-space:nowrap !important; text-overflow:ellipsis; overflow:visible !important;
       padding:14px 10px !important; height:60px !important; border:1.5px solid #b0bec5; vertical-align:middle; max-width:200px; transition:background-color .2s; font-size:13px;
     }
     #schedule-table .time-slot{
@@ -106,7 +106,7 @@
     .person:hover{ transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,.12); filter:brightness(1.05); }
     .spotlight-active .person:not(.highlight-name){ opacity:var(--spotlight-dim-opacity) !important; filter:grayscale(80%); }
     @media (pointer:coarse){ .spotlight-active .person:not(.highlight-name){ opacity:calc(var(--spotlight-dim-opacity) + .10) !important; filter:none; } }
-    .person.highlight-name{ opacity:1 !important; filter:none !important; transform:scale(1.12); box-shadow:0 4px 15px rgba(0,0,0,.4) !important; outline:3px solid #000; position:relative; z-index:100; }
+    .person.highlight-name{ opacity:1 !important; filter:none !important; transform:scale(1.35) !important; box-shadow:0 10px 25px rgba(0,0,0,0.5) !important; outline:4px solid #000 !important; outline-offset:2px; z-index:9999 !important; position:relative; }
 
     /* ============ מפות צבע (שימור) ============ */
     .color-אמיר{background:#7bb5e4;color:#0D47A1}.color-נמרוד{background:#e1f5fe;color:#0277bd}
@@ -882,7 +882,7 @@
             body{ padding:5px; text-align:center; overflow-x:auto; -webkit-text-size-adjust:100%; }
             html,body{ width:100%; overflow-x:hidden; }
             .spotlight-active .person:not(.highlight-name){ opacity:.45 !important; filter:grayscale(30%); transform:scale(.98); }
-            .person.highlight-name{ opacity:1 !important; filter:none !important; transform:scale(1.1) !important; box-shadow:0 4px 12px rgba(0,0,0,.4) !important; outline:2px solid #000; z-index:100; }
+            .person.highlight-name{ opacity:1 !important; filter:none !important; transform:scale(1.35) !important; box-shadow:0 10px 25px rgba(0,0,0,0.5) !important; outline:4px solid #000 !important; outline-offset:2px; z-index:9999 !important; position:relative; }
             .assist-cell{ user-select:none; cursor:default; }
             #results-container{ transition:all .2s ease; width:100%; display:block; }
             #schedule-table{ margin-right:0; margin-left:auto; }
