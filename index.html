@@ -56,17 +56,52 @@
     .excel-btn.tertiary{ background:#fafafa; border:1px solid var(--border-color); }
 
     /* ============ בחירת שומרים (פאנל צד) ============ */
-    .guard-selector-container{
-      display:flex; flex-wrap:wrap; gap:8px; justify-content:center; background:#fff; padding:15px;
-      border-radius:10px; border:1px solid var(--border-color);
-    }
-    .guard-btn{
-      background:#f0f4f7; color:#37474f; border:1px solid #cfd8dc; padding:8px 16px;
-      border-radius:20px; cursor:pointer; font-size:13px; transition:.2s;
-    }
-    .guard-btn:hover{ background:#e2ecf1; border-color:#b0bec5; }
-    .guard-btn.active{ background:#FFC107; color:#212121; border-color:#FFA000; font-weight:700; transform:scale(1.05); box-shadow:0 2px 5px rgba(0,0,0,.2); }
+	.guard-selector-container {
+	  display: grid;
+	  /* הגדרת 3 שורות קבועות ו-8 עמודות */
+	  grid-template-rows: repeat(3, 1fr);
+	  grid-template-columns: repeat(8, 1fr);
+	  grid-auto-flow: column; /* גורם לשמות למלא טור ואז לעבור לטור הבא */
+	  gap: 6px;
+	  background: #ffffff;
+	  padding: 15px;
+	  border-radius: 12px;
+	  border: 1px solid #e2e8f0;
+	  direction: rtl;
+	  width: 100%; /* נפתח לכל הרוחב */
+	  max-width: 1000px; /* גבול עליון כדי שלא יתמרח מדי במסכים ענקיים */
+	  margin: 15px auto;
+	  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	}
 
+	.guard-btn {
+	  background: #f8fafc;
+	  color: #475569;
+	  border: 1px solid #f1f5f9;
+	  padding: 6px 2px;
+	  border-radius: 6px;
+	  cursor: pointer;
+	  font-size: 12px;
+	  font-weight: 600;
+	  transition: all 0.2s;
+	  text-align: center;
+	  white-space: nowrap;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	}
+
+	.guard-btn:hover {
+	  background: #f1f5f9;
+	  border-color: #cbd5e0;
+	}
+
+	.guard-btn.active {
+	  background: #fffbeb;
+	  color: #92400e;
+	  border-color: #fcd34d;
+	  box-shadow: 0 2px 4px rgba(252, 211, 77, 0.2);
+	}
+	
     /* ============ פריסת עורך ============ */
     .editor-layout-row{ display:flex; gap:20px; align-items:flex-start; margin-top:20px; }
     .textarea-container{ flex:2; display:none !important; } /* הסתרת עורך טקסט ישן */
@@ -1184,16 +1219,38 @@
     /* =========================
        בחירת “צהובים” ל‑5 משמרות
     ========================== */
-    function generateGuardsButtons(){
-      const c = document.getElementById('guardButtonsContainer'); if (!c) return;
-      c.innerHTML = '';
-      Object.keys(colorMap).sort().forEach(name=>{
-        const btn = document.createElement('button');
-        btn.textContent = name; btn.className='guard-btn'; btn.type='button';
-        btn.onclick = function(){ this.classList.toggle('active'); updateGuardsTextarea(); };
-        c.appendChild(btn);
-      });
-    }
+	function generateGuardsButtons() {
+	  const c = document.getElementById('guardButtonsContainer');
+	  if (!c) return;
+	  c.innerHTML = '';
+
+	  // השמות שצריכים להיות בצד שמאל (סוף הרשימה בפריסה רוחבית)
+	  const leftSideNames = ['אמיר חורי', 'יפתח', 'חורחה', 'חגי'];
+	  
+	  const allNames = Object.keys(colorMap)
+		.map(k => k.includes('_') ? k.replace('_', ' ') : k)
+		.sort();
+
+	  // מפרידים בין ה"שמאליים" לכל השאר
+	  const others = allNames.filter(n => !leftSideNames.some(ln => n.includes(ln)));
+	  const vips = allNames.filter(n => leftSideNames.some(ln => n.includes(ln)));
+
+	  // מחברים אותם כך שה-VIPs יהיו בסוף (מה שיוצר את הטורים השמאליים)
+	  const finalOrder = [...others, ...vips];
+
+	  finalOrder.forEach(name => {
+		const btn = document.createElement('button');
+		btn.textContent = name;
+		btn.className = 'guard-btn';
+		btn.type = 'button';
+		btn.onclick = function() {
+		  this.classList.toggle('active');
+		  updateGuardsTextarea();
+		};
+		c.appendChild(btn);
+	  });
+	}
+	
     function updateGuardsTextarea(){
       const act = document.querySelectorAll('.guard-btn.active');
       document.getElementById('guardsFor5Shifts').value = Array.from(act).map(b=>b.textContent).join(', ');
