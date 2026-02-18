@@ -331,10 +331,20 @@
     @media (max-width: 768px) {
       #name-inspector { width: calc(100vw - 24px); left: 12px; top: auto; bottom: 12px; }
 }
-      
-    
+       
     /* הודעות */
     #link-message{ display:none; }
+	
+	@keyframes tech-pulse {
+	  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(118, 75, 162, 0.7); }
+	  50% { transform: scale(1.15); box-shadow: 0 0 35px 15px rgba(118, 75, 162, 0.6); }
+	  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(118, 75, 162, 0); }
+	}
+
+	.highlight-sparkle {
+	  animation: tech-pulse 0.8s ease-in-out 3;
+	  z-index: 999;
+	}
   </style>
 	</head>
 
@@ -992,7 +1002,8 @@
             .assist-cell{ user-select:none; cursor:default; }
             #results-container{ transition:all .2s ease; width:100%; display:block; }
             #schedule-table{ margin-right:0; margin-left:auto; }
-          </style>
+         
+ </style>
         </head><body>
           <h1 class="modern-main-header" style="font-size:1.5em; padding:10px;">${header}</h1>
           <div id="results-container">${exportTableHTML}</div>
@@ -1268,9 +1279,30 @@
         const data = await resp.text();
         if (!data.trim()) throw new Error('טקסט ריק מהשרת');
 
+		// 1. מעדכן את הטקסט ואת הסטטוס
         dataTextArea.value = data;
-        statusEl.textContent='✅ נטען! ממלא את טבלת הקלט...'; statusEl.style.color='green';
-		document.getElementById('autoScheduleButton').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        statusEl.textContent = '✅ נטען! ממלא טבלה...'; 
+        statusEl.style.color = 'green';
+
+        // 2. פקודה חשובה: ממלא את הטבלה (זה מה שמאריך את הדף)
+        if (window.ExcelGrid?.loadFromTextarea) ExcelGrid.loadFromTextarea();
+
+        // 3. מחכה שהדף יסיים להיפתח (300 מילי-שניות) ואז גולל ומנצנץ
+        setTimeout(() => {
+            const robotBtn = document.getElementById('autoScheduleButton');
+            if (robotBtn) {
+                // גלילה חלקה שתביא אותו בדיוק למרכז המסך
+                robotBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // הפעלת הניצנוץ (Sparkle)
+                robotBtn.classList.add('highlight-sparkle');
+                
+                // הסרת הניצנוץ אחרי 2.4 שניות
+                setTimeout(() => {
+                    robotBtn.classList.remove('highlight-sparkle');
+                }, 2400);
+            }
+        }, 300);
 		
         if (window.ExcelGrid?.loadFromTextarea) ExcelGrid.loadFromTextarea();
         else console.warn('ExcelGrid.loadFromTextarea() לא נמצא');
