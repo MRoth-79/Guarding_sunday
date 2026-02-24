@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מנתח טבלת משמרות 📅</title>
+
+  <style>
+    /* ============ משתנים גלובליים ============ */
+    :root {
+      --primary-blue:#004D40; --secondary-blue:#4DB6AC; --light-bg-color:#F8FBFB;
+      --accent-red:#D32F2F; --btn-analyze:#388E3C; --btn-download:#546E7A;
+      --btn-generate:#1976D2; --btn-reset:#E53935; --btn-auto:#00A896;
+      --text-color:#212121; --border-color:#E0E0E0; --shadow:0 4px 10px rgba(0,0,0,.08);
+      --summary-header:#37474F; --exception-bg:#FFF3E0; --exception-text:#E65100;
+      --saturday-bg:#FFF3E0; --spotlight-dim-opacity:.2;
+    }
+
+    /* ============ בסיס עמוד ============ */
+    body {
+      font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      direction:rtl; text-align:right; background:var(--light-bg-color);
+      color:var(--text-color); padding:20px; line-height:1.6;
+    }
+    .container { max-width:98%; margin:0 auto; }
+    h2,h3 {
+      color:var(--primary-blue); text-align:center; margin:0 0 20px;
+      padding-bottom:10px; border-bottom:2px solid var(--border-color);
+    }
+
+    /* ============ כפתורים ============ */
+    button {
+      border:none; padding:12px 25px; margin:5px; border-radius:8px; cursor:pointer;
+      font-size:16px; font-weight:700; transition:.3s; color:#fff;
+      text-shadow:1px 1px 2px rgba(0,0,0,.2); box-shadow:0 3px 6px rgba(0,0,0,.1);
+    }
+    button:hover:not(:disabled){ opacity:.9; transform:translateY(-2px); box-shadow:0 5px 10px rgba(0,0,0,.15); }
+    button:active{ transform:scale(.96); box-shadow:0 2px 4px rgba(0,0,0,.1); }
+    button:disabled{ background:#ccc !important; cursor:not-allowed; }
+
+    #analyzeButton{ background:var(--btn-analyze); }
+    #generateLinkButton{ background:var(--btn-generate); }
+    #autoScheduleButton{ background:var(--btn-auto); padding:15px 40px; font-size:19px; min-width:250px; max-width:400px; }
+    #button-group, #main-button-wrapper{
+      display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px; margin:25px auto; width:100%;
+    }
+	
+	/* פאנל השליטה - רחב וברור */
+	.tech-control-panel { 
+	  display: flex; 
+	  justify-content: center; 
+	  gap: 20px; 
+	  margin: 25px auto; 
+	  padding: 20px; 
+	  background: rgba(255,255,255,0.6); 
+	  backdrop-filter: blur(10px); 
+	  border-radius: 20px; 
+	  border: 1px solid #e2e8f0; 
+	  width: fit-content; 
+	  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+	}
+
+	/* הכפתורים הטכנולוגיים - גדולים ומאסיביים */
+	.tech-btn { 
+	  display: flex; 
+	  flex-direction: column; 
+	  align-items: center; 
+	  justify-content: center;
+	  width: 180px;    /* רוחב נדיב */
+	  height: 110px;   /* גובה שנותן נוכחות */
+	  border: none; 
+	  border-radius: 16px; 
+	  color: white; 
+	  font-weight: 900; 
+	  cursor: pointer; 
+	  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+	  font-size: 18px; /* כתב גדול וברור */
+	  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+	}
+
+	.tech-btn .icon { 
+	  font-size: 32px; 
+	  margin-bottom: 8px; 
+	}
+
+	/* צבעי הכפתורים (Gradients) */
+	.fetch-btn { background: linear-gradient(135deg, #00d2ff, #3a7bd5); }
+	.ai-btn { background: linear-gradient(135deg, #667eea, #764ba2); }
+	.analyze-btn { background: linear-gradient(135deg, #00b09b, #96c93d); }
+
+	.tech-btn:hover { 
+	  transform: translateY(-6px) scale(1.03); 
+	  filter: brightness(1.1); 
+	  box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
+	}
+
+	/* כפתור אקסל - נשאר ירוק ומזוהה */
+	.excel-link-btn { 
+	  background: #1D6F42 !important; 
+	  color: white !important; 
+	  padding: 10px 20px; 
+	  border-radius: 6px; 
+	  font-weight: 800; 
+	  text-decoration: none; 
+	  border: 1px solid #135933; 
+	  font-size: 15px; 
+	  display: inline-flex;
+	  align-items: center;
+	  gap: 8px;
+	  transition: 0.2s;
+	}
+
+	.excel-link-btn:hover {
+	  background: #155231 !important;
+	  transform: translateY(-2px);
+	}
+	
+    /* ============ קלאס כפתור אחיד גם ל-<a> ============ */
+    .excel-btn{
+      display:inline-block; text-decoration:none; background:#eceff1; color:#263238;
+      border:none; border-radius:8px; padding:8px 14px; font-weight:600; transition:.2s;
+    }
+    .excel-btn:hover{ filter:brightness(.97); transform:translateY(-1px); }
+    .excel-btn.primary{ background:var(--btn-generate); color:#fff; }
+    .excel-btn.danger{ background:var(--btn-reset); color:#fff; }
+    .excel-btn.tertiary{ background:#fafafa; border:1px solid var(--border-color); }
+
+    /* ============ בחירת שומרים (פאנל צד) ============ */
+	.guard-selector-container {
+	  display: grid;
+	  /* הגדרת 3 שורות קבועות ו-8 עמודות */
+	  grid-template-rows: repeat(3, 1fr);
+	  grid-template-columns: repeat(8, 1fr);
+	  grid-auto-flow: column; /* גורם לשמות למלא טור ואז לעבור לטור הבא */
+	  gap: 6px;
+	  background: #ffffff;
+	  padding: 15px;
+	  border-radius: 12px;
+	  border: 1px solid #e2e8f0;
+	  direction: rtl;
+	  width: 100%; /* נפתח לכל הרוחב */
+	  max-width: 1000px; /* גבול עליון כדי שלא יתמרח מדי במסכים ענקיים */
+	  margin: 15px auto;
+	  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	}
+
+	.guard-btn {
+	  background: #f8fafc;
+	  color: #475569;
+	  border: 1px solid #f1f5f9;
+	  padding: 6px 2px;
+	  border-radius: 6px;
+	  cursor: pointer;
+	  font-size: 12px;
+	  font-weight: 600;
+	  transition: all 0.2s;
+	  text-align: center;
+	  white-space: nowrap;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	}
+
+	.guard-btn:hover {
+	  background: #f1f5f9;
+	  border-color: #cbd5e0;
+	}
+
+	.guard-btn.active {
+	  background: #fffbeb;
+	  color: #92400e;
+	  border-color: #fcd34d;
+	  box-shadow: 0 2px 4px rgba(252, 211, 77, 0.2);
+	}
+	
+    /* ============ פריסת עורך ============ */
+    .editor-layout-row{ display:flex; gap:20px; align-items:flex-start; margin-top:20px; }
+    .textarea-container{ flex:2; display:none !important; } /* הסתרת עורך טקסט ישן */
+    .guards-selection-side-panel{
+      flex:1; background:#fff; padding:20px; border-radius:15px; border:1px solid #f0f0f0; box-shadow:0 4px 15px rgba(0,0,0,.08); position:sticky; top:20px;
+    }
+
+    /* ============ טבלת המשמרות ============ */
+    #results-container{ width:100%; margin-top:30px; overflow-x:auto; padding:20px; box-sizing:border-box; }
+    #schedule-table{
+      width:100% !important; border-collapse:collapse; background:#fff; border-radius:12px;
+      border:2px solid #90a4ae; box-shadow:0 10px 30px rgba(0,0,0,.05); table-layout:fixed !important; overflow:hidden;
+    }
+    #schedule-table thead{ background:var(--primary-blue); color:#fff; letter-spacing:1px; font-weight:700; }
+    #schedule-table thead th{ border-color:#78909c; border-bottom-width:2px; }
+    #schedule-table th,#schedule-table td{
+      width:12.5% !important; box-sizing:border-box !important; white-space:nowrap !important; text-overflow:ellipsis; overflow:visible !important;
+      padding:14px 10px !important; height:60px !important; border:1.5px solid #b0bec5; vertical-align:middle; max-width:200px; transition:background-color .2s; font-size:13px;
+    }
+    #schedule-table .time-slot{
+      background:var(--secondary-blue); color:#fff; text-shadow:0 0 3px rgba(0,0,0,.3); font-weight:700; direction:ltr !important; border-right:2px solid #90a4ae;
+    }
+    /* שישי/שבת */
+    #schedule-table th:nth-child(7), #schedule-table th:nth-child(8){ background:#ff8a65; }
+    #schedule-table td:nth-child(7), #schedule-table td:nth-child(8){ background:var(--saturday-bg) !important; }
+    /* Hover */
+    #schedule-table tbody tr:hover td{ background:#eef6f8; }
+    #schedule-table tbody tr:hover td.time-slot{ color:#000; background:#e6f2f4; text-shadow:none; }
+    #schedule-table td:last-child{ padding-left:20px; }
+
+    /* ============ בועות שמות ============ */
+    .person{
+      display:flex !important; width:fit-content; margin:3px auto; padding:6px 14px; border-radius:50px;
+      font-size:1.25em; font-weight:600; transition:.3s; box-shadow:0 2px 4px rgba(0,0,0,.05);
+      border:1px solid rgba(0,0,0,.03); user-select:none; cursor:default;
+    }
+    .person:hover{ transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,.12); filter:brightness(1.05); }
+    .spotlight-active .person:not(.highlight-name){ opacity:var(--spotlight-dim-opacity) !important; filter:grayscale(80%); }
+    @media (pointer:coarse){ .spotlight-active .person:not(.highlight-name){ opacity:calc(var(--spotlight-dim-opacity) + .10) !important; filter:none; } }
+    .person.highlight-name{ opacity:1 !important; filter:none !important; transform:scale(1.35) !important; box-shadow:0 10px 25px rgba(0,0,0,0.5) !important; outline:4px solid #000 !important; outline-offset:2px; z-index:9999 !important; position:relative; }
+
+    /* ============ מפות צבע (שימור) ============ */
+    .color-אמיר{background:#7bb5e4;color:#0D47A1}.color-נמרוד{background:#e1f5fe;color:#0277bd}
+    .color-יובי{background:#fff8e1;color:#ff8f00}.color-טגניה{background:#43A047;color:#fff}
+    .color-ישי{background:#f3e5f5;color:#6a1b9a}.color-חסון{background:#0D47A1;color:#fff}
+    .color-לישע{background:#4a704c;color:#fff}.color-עידן{background:#eceff1;color:#D81B60}
+    .color-חגי{background:#fff3e0;color:#e65100}.color-סתיו{background:#ff0;color:#00f}
+    .color-אסף{background:#FFECB3;color:#c62828}.color-ליאני{background:#7E57C2;color:#fff}
+    .color-נתי{background:transparent !important; box-shadow:none !important; font-size:0 !important; cursor:help}
+    .color-נתי::before{content:"🐍";font-size:28px;display:inline-block;visibility:visible}
+    .color-ערן{background:#e8eaf6;color:#3949ab}.color-מאור{background:#FFF9C4;color:#212121}
+    .color-ניר{background:#f00;color:#fff}.color-חורחה{background:#fce4ec;color:#d81b60}
+    .color-שלומי{background:#A1887F;color:#fff}.color-יפתח{background:#f0f4c3;color:#827717}
+    .color-חברוני{background:#c8e6c9;color:#33691e}.color-ויקטור{background:#FFB300;color:#fff}
+    .color-גולן{
+      background:#D32F2F; background-image:conic-gradient(#fff 90deg,transparent 90deg 180deg,#fff 180deg 270deg,transparent 270deg);
+      background-size:10px 10px; color:#fff !important; font-weight:700;
+      text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;
+    }
+
+    /* ============ סיכום/חריגות ============ */
+    #summary-table,#exceptions-table{
+      width:95%; margin:30px auto; border-collapse:separate; border-spacing:0; border-left:4px solid var(--primary-blue);
+      border-radius:12px; overflow:hidden; border:1px solid #f0f0f0; box-shadow:0 10px 25px rgba(0,0,0,.05);
+    }
+    #summary-table thead{ background:var(--summary-header); color:#fff; }
+    #exceptions-table thead{ background:#ef4444; color:#fff; }
+    #summary-table th,#summary-table td,#exceptions-table th,#exceptions-table td{ padding:16px; text-align:center; border-bottom:1px solid #f8fafc; font-size:15px; }
+    #summary-table tr:last-child td,#exceptions-table tr:last-child td{ border-bottom:none; }
+    .shifts-5-count{ background:#E3F2FD !important; color:#0D47A1 !important; font-weight:700; border-right:6px solid #1976D2; }
+    .shifts-4-count{ background:#C8E6C9; color:#1B5E20; font-weight:700; border-right:4px solid #1B5E20; }
+    .low-shifts{ background:#FBECEC; color:var(--accent-red); font-weight:700; }
+    .night-limit-ok{ color:#1b5e20; font-weight:700; }
+    .night-limit-fail{ color:#b71c1c; font-weight:700; }
+    .night-limit-fail-row{ background:#ffebee; border-left:4px solid #d32f2f; }
+    .needs-selection{ background:#ffebee; color:#b71c1c; font-weight:700; }
+    .ok-shift{ background:#fff; }
+    .night-shift-ok{ background:#f3f7ff; }
+    .warning-text{ color:#d32f2f; font-weight:700; text-shadow:0 0 2px rgba(0,0,0,.1); }
+
+    /* ============ רספונסיביות ============ */
+    @media (max-width:1024px){
+      .editor-layout-row{ flex-direction:column; }
+      .guards-selection-side-panel{ position:static; width:100%; }
+      #schedule-table{ display:block; overflow-x:auto; }
+    }
+
+    /* ============ כותרת ראשית ============ */
+    .modern-main-header{
+      display:table !important; margin:40px auto !important; width:fit-content; text-align:center;
+      padding:15px 40px; font-size:2.2em; font-weight:800; background:#fff; border-radius:100px; box-shadow:0 10px 25px rgba(0,0,0,.08);
+      border:1px solid #f0f0f0; color:var(--primary-blue);
+    }
+
+    /* ============ שורת ליווי 07:40 ============ */
+    .red-assistance-shift{ box-shadow:0 4px 10px rgba(0,0,0,.3); position:relative; z-index:5; }
+    .red-assistance-shift td{
+      background:#F3E5F5 !important; color:#000 !important; font-weight:800 !important; border-top:3px solid #000 !important; border-bottom:3px solid #000 !important;
+    }
+	#schedule-table tbody tr.red-assistance-shift td:nth-child(7),
+	#schedule-table tbody tr.red-assistance-shift td:nth-child(8){
+	  background:var(--saturday-bg) !important; border-top:3px solid #000 !important; border-bottom:3px solid #000 !important;
+	}
+    .red-assistance-shift td:first-child{ border-right:3px solid #000 !important; }
+    .red-assistance-shift td:last-child{ border-left:3px solid #000 !important; }
+    .red-assistance-shift td.time-slot{ background:var(--secondary-blue) !important; color:#fff !important; }
+
+    /* ============ אנימציית דגל (שבת בליווי אם תרצה) ============ */
+    @keyframes wave-flag{ 0%,100%{transform:rotateY(0)} 50%{transform:rotateY(12deg)} }
+    .waving-flag{ display:inline-block; animation:wave-flag 2.5s infinite ease-in-out; transform-origin:left center; filter:drop-shadow(2px 4px 6px rgba(0,0,0,.3)); }
+
+    /* ============ כפתורי Fetch ============ */
+    .fetch-button{ background:#4CAF50; color:#fff; padding:10px 15px; min-width:120px; border-radius:6px; transition:.2s; }
+    .quick-fetch-button{ background:var(--btn-generate); color:#fff; padding:12px 25px; border-radius:8px; transition:.2s; }
+
+    /* ============ כרטיס “אקסל” ============ */
+    .excel-card{ background:#fff; border:1px solid var(--border-color); border-radius:12px; box-shadow:var(--shadow); padding:16px; margin:18px 0; }
+    .excel-card-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    .excel-card-header .title{ font-size:1.1rem; font-weight:800; color:var(--primary-blue); }
+    .excel-card .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+    #excel-grid-wrapper{ width:100%; overflow:auto; border:1px solid #e0e0e0; border-radius:10px; }
+    .excel-grid{ width:100%; min-width:760px; border-collapse:separate; border-spacing:0; table-layout:fixed; background:#fff; }
+    .excel-grid thead th{
+      position:sticky; top:0; background:var(--primary-blue); color:#fff; z-index:2; padding:10px; font-weight:800; font-size:.95rem; border-bottom:2px solid #78909c;
+    }
+    .excel-grid thead th:first-child{ left:0; z-index:3; }
+    .excel-grid th,.excel-grid td{ border-right:1px solid #e0e0e0; border-bottom:1px solid #eef2f5; padding:8px; vertical-align:middle; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+    .excel-grid tbody td:first-child{ position:sticky; left:0; background:#f6fbff; border-left:1px solid #e0e0e0; font-weight:700; color:#0D47A1; }
+    .excel-grid tbody tr:nth-child(odd) td{ background:#fcfeff; }
+    .excel-grid td.cell{ background:#fff; font-size:14px; direction:rtl; }
+    .excel-grid td.cell[contenteditable="true"]{ outline:none; cursor:text; }
+    .excel-grid td.cell:focus{ box-shadow:inset 0 0 0 2px rgba(25,118,210,.25); background:#f8fbff; }
+
+    .excel-date{ display:flex; align-items:center; gap:10px; margin:8px 0 14px; flex-wrap:wrap; }
+    .excel-date label{ font-weight:700; color:var(--text-color); }
+    .excel-date input[type="date"]{
+      font-size:14px; padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; outline:none; background:#fff; transition:.2s;
+    }
+    .excel-date input[type="date"]:hover{ border-color:var(--secondary-blue); background:#f9fbfb; }
+    .excel-date input[type="date"]:focus{ border-color:var(--primary-blue); box-shadow:0 0 5px rgba(0,121,107,.15); } 
+                                         
+    /* ============ כרטיס מידע על שם (inspector) ============ */
+    #name-inspector { position: fixed;  top: 20px;  left: 20px; z-index: 9999; width: 320px; max-height: 80vh; overflow: auto; background: #fff;
+      border: 1px solid var(--border-color); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; display: none;}
+    #name-inspector .hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    #name-inspector .hdr .title { font-weight: 800; color: var(--primary-blue); font-size: 1.05rem; }
+    #name-inspector .close-btn { background: transparent; color: #455a64; border: 1px solid #cfd8dc; padding: 4px 8px; border-radius: 8px; cursor: pointer; font-weight: 700; }
+    #name-inspector .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    #name-inspector .kpi { background: #f8fbfb; border: 1px solid #eef2f5; border-radius: 10px; padding: 8px; text-align: center; }
+    #name-inspector .kpi .num { font-size: 1.4rem; font-weight: 900; color: #263238; }
+    #name-inspector .kpi .lbl { font-size: .85rem; color: #607d8b; }
+    #name-inspector .list { border-top: 1px dashed #e0e0e0; padding-top: 10px; }
+    #name-inspector .item { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border: 1px solid #eef2f5; border-radius: 8px; margin-bottom: 6px; background: #fff; }
+    #name-inspector .item .left { text-align: right; }
+    #name-inspector .tag { font-size: .75rem; font-weight: 800; background: #ffe0b2; color: #e65100; border: 1px solid #ffcc80; border-radius: 999px; padding: 2px 8px; }
+    #name-inspector .muted { color: #78909c; font-size: .85rem; }
+    @media (max-width: 768px) {
+      #name-inspector { width: calc(100vw - 24px); left: 12px; top: auto; bottom: 12px; }
+}
+       
+    /* הודעות */
+    #link-message{ display:none; }
+	
+	@keyframes tech-pulse {
+	  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(118, 75, 162, 0.7); }
+	  50% { transform: scale(1.15); box-shadow: 0 0 35px 15px rgba(118, 75, 162, 0.6); }
+	  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(118, 75, 162, 0); }
+	}
+
+	.highlight-sparkle {
+	  animation: tech-pulse 0.8s ease-in-out 3;
+	  z-index: 999;
+	}
+  </style>
+	</head>
+
+	<body>
+	  <div class="modern-main-header waving-flag">מנתח טבלת משמרות 📅</div>
+
+	  <div id="input-section-wrapper">
+		<div id="data-source-section">
+		  <h3>נתוני משמרות לעריכה ומקור הנתונים 📝</h3>
+
+		  <!-- כרטיס קלט בסגנון “אקסל” -->
+		  <div id="excel-input-card" class="excel-card">
+			<div class="excel-card-header">
+			  <div class="title">טבלת קלט (הדבקה ישירה)</div>
+			  <div class="excel-date">
+				<label for="startDate">תאריך יום ראשון:</label>
+				<input type="date" id="startDate" required />
+			  </div>
+			  <div class="actions">
+				<a
+				  href="https://docs.google.com/spreadsheets/d/1NXgjKC-0j4blUQawwzz4lMEhswA561GKxAoSJO5ie_s/edit?gid=0#gid=0"
+				  class="excel-btn tertiary" target="_blank" rel="noopener noreferrer"
+				>פתח גיליון נתונים 📄</a>
+
+				<button id="btnExcelPasteHelp" type="button" class="excel-btn tertiary">איך להדביק?</button>
+				<button id="btnExcelLoadFromText" type="button" class="excel-btn">טען מהטקסט ↩︎</button>
+				<button id="btnExcelApplyToText" type="button" class="excel-btn primary">החיל לטקסט ↪︎</button>
+				<button id="btnExcelAuto" type="button" class="excel-btn primary">סדר אוטומטי ↻</button>
+				<button id="generateLinkButton" type="button" class="excel-btn">הורד טבלת HTML 💾</button>
+				<button id="btnExcelClear" type="button" class="excel-btn danger">נקה</button>
+			  </div>
+			</div>
+
+			<div class="excel-help" id="excelPasteHelp" hidden>
+			  <ol>
+				<li>סמן טווח באקסל → העתק → הדבק לתא כאן.</li>
+				<li>הדבקה עם/בלי כותרות נתמכת.</li>
+				<li>לחיצה על "החיל לטקסט" תעדכן את העורך ותבצע ניתוח.</li>
+			  </ol>
+			</div>
+
+			<div id="excel-grid-wrapper">
+			  <table id="excel-grid" class="excel-grid" dir="rtl"></table>
+			</div>
+			<div class="excel-tip">טיפ: פסיק או Enter מפרידים בין שמות.</div>
+		  </div>
+
+		  <h3>משיכת נתונים מ‑Google Sheet Web App ☁️</h3>
+		  <p class="file-format-info">הדבק כאן את כתובת ה‑Web App של Apps Script שמחזירה טקסט/CSV</p>
+
+		  <div style="display:flex; gap:10px; margin:10px 0 5px;">
+			<input id="googleSheetUrl" type="text"
+			  placeholder="הדבק כאן את כתובת ה-Web App..."
+			  style="flex-grow:1; padding:10px; border:1px solid var(--border-color); border-radius:6px; font-size:14px; direction:ltr; text-align:left;"
+			/>
+			<button id="fetchFromSheetButton" class="fetch-button">משוך נתונים 🔄</button>
+		  </div>
+		  <p id="fetch-status" style="text-align:center; display:none; font-weight:700; margin-top:10px;"></p>
+
+		  <div class="editor-layout-row">
+			<div class="textarea-container">
+			  <textarea id="dataToAnalyze" title="נתוני משמרות לעריכה וניתוח"
+				placeholder="הדבק את נתוני המשמרות כאן (יום ראשון → שעות → עובד1 עובד2...)"></textarea>
+			</div>
+
+			<div class="guards-selection-side-panel">
+			  <h3>בחירת שומרים ליעד של 4–5 משמרות 🏆</h3>
+			  <p class="file-format-info" style="font-size:.85em; margin-bottom:10px;">
+				לחץ על השומרים שחייבים להגיע ליעד – הם יקבלו קדימות בסבב הראשון.
+			  </p>
+			  <div id="guardButtonsContainer" class="guard-selector-container" style="box-shadow:none; border:1px solid #eee; background:#fafafa;"></div>
+			  <input type="hidden" id="guardsFor5Shifts" />
+			</div>
+		  </div>
+
+			<div class="tech-control-panel">
+			  <button id="quickFetchButton" class="tech-btn fetch-btn">
+				<span class="icon">🔄</span> משוך נתונים
+			  </button>
+			  <button id="autoScheduleButton" class="tech-btn ai-btn">
+				<span class="icon">🤖</span> סדר אוטומטי
+			  </button>
+			  <button id="analyzeButton" class="tech-btn analyze-btn">
+				<span class="icon">🔍</span> נתח נתונים
+			  </button>
+			</div>
+
+		  <div id="results-container" style="text-align:center;">
+			<p id="initial-message">הטעינה הראשונית תפעיל את הניתוח אוטומטית.</p>
+		  </div>
+
+		  <!-- כרטיס מידע על שם (נפתח בלחיצה על בועה) -->
+		  <div id="name-inspector" aria-live="polite" aria-hidden="true">
+			<div class="hdr">
+			  <div class="title">פרטי שומר</div>
+			  <button class="close-btn" type="button" id="nameInspectorClose">סגור</button>
+			</div>
+			<div class="kpis">
+			  <div class="kpi">
+				<div class="num" id="niTotalShifts">0</div>
+				<div class="lbl">סה״כ משמרות</div>
+			  </div>
+			  <div class="kpi">
+				<div class="num" id="niAssistCount">0</div>
+				<div class="lbl">ליווי 07:40</div>
+			  </div>
+			</div>
+			<div class="muted" id="niPersonName"></div>
+			<div class="list" id="niList"></div>
+		  </div>
+
+	  <div id="link-message"><p>✅ קובץ HTML הורד בהצלחה!</p></div>
+
+  <script>
+    /* =========================
+       קבועים ומפות נתונים
+       (הסברים קצרים ונכונים)
+    ========================== */
+    let lastRenderedTableHTML = '';
+    const INITIAL_SCHEDULE_DATA = '';
+
+    // מכסות שבועיות
+    const MIN_REQUIRED = 4;
+    const MAX_ALLOWED = 5;
+    const MAX_NIGHT_2_6 = 2;
+    const MAX_ITERATIONS = 10;
+
+    // שמות ימים ומשמרות – הסדר חשוב!
+    const EXPECTED_DAYS = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','יום שבת'];
+    const EXPECTED_TIME_SLOTS = [
+      '02:00 - 06:00 (Night)', // 0
+      '06:00 - 10:00',         // 1
+      '10:00 - 14:00',         // 2
+      '14:00 - 18:00',         // 3
+      '18:00 - 22:00',         // 4
+      '22:00 - 02:00 (Night)'  // 5
+    ];
+
+    // אינדקסים לשימוש מהיר
+    const NIGHT_SHIFT_2_6_INDEX = 0;
+    const MORNING_SHIFT_6_10_INDEX = 1;
+    const MORNING_SHIFT_10_14_INDEX = 2;
+    const AFTERNOON_SHIFT_14_18_INDEX = 3;
+    const NIGHT_SHIFT_22_2_INDEX = 5;
+
+    // אכיפת 8 שעות מנוחה בין משמרות עוקבות באותו יום
+    const CONSECUTIVE_SHIFT_CHECK = { 2:1, 3:2, 4:3, 5:4 };
+
+    // מפה לשמות → צבעים (בועות)
+    const colorMap = {
+      'אמיר':'color-אמיר','נמרוד':'color-נמרוד','יובי':'color-יובי','טגניה':'color-טגניה',
+      'ישי':'color-ישי','גולן':'color-גולן','חסון':'color-חסון','לישע':'color-לישע',
+      'עידן':'color-עידן','חגי':'color-חגי','סתיו':'color-סתיו','אסף':'color-אסף',
+      'ליאני':'color-ליאני','נתי':'color-נתי','ערן':'color-ערן','מאור':'color-מאור',
+      'ניר':'color-ניר','חורחה':'color-חורחה','שלומי':'color-שלומי','יפתח':'color-יפתח',
+      'חברוני':'color-חברוני','ויקטור':'color-ויקטור'
+    };
+
+    /* =========================
+       עזר ותאריך
+    ========================== */
+    function initializeData(){
+      document.getElementById('dataToAnalyze').value = INITIAL_SCHEDULE_DATA;
+
+      const today = new Date();
+      let dayOfWeek = today.getDay();             // 0=ראשון
+      let daysToNextSunday = 7 - dayOfWeek;
+      if (dayOfWeek === 0) daysToNextSunday = 7;  // אם היום ראשון – הבא בעוד שבוע (אפשר לשנות ל-0 אם רוצים את השבוע הנוכחי)
+      today.setDate(today.getDate() + daysToNextSunday);
+      document.getElementById('startDate').value = today.toISOString().split('T')[0];
+
+      const savedUrl = localStorage.getItem('googleSheetUrl');
+      if (savedUrl) document.getElementById('googleSheetUrl').value = savedUrl;
+    }
+
+    function getDatesForWeek(startDateString){
+      const dates = [];
+      const [y,m,d] = startDateString.split('-');
+      const start = new Date(y, m-1, d);
+      for (let i=0;i<7;i++){
+        const cur = new Date(start); cur.setDate(start.getDate()+i);
+        dates.push(`${String(cur.getDate()).padStart(2,'0')}/${String(cur.getMonth()+1).padStart(2,'0')}`);
+      }
+      return dates;
+    }
+
+    const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+    /* =========================
+       ליווי 07:40 (נשמר לשבוע)
+       – תופס את היום ומונע שיבוץ נוסף
+    ========================== */
+    function getAssistWeekKey(){ return 'assist_0740__' + (document.getElementById('startDate').value || 'no-date'); }
+    function loadAssistArray(){
+      try {
+        const raw = localStorage.getItem(getAssistWeekKey()); const arr = raw? JSON.parse(raw): null;
+        return Array.isArray(arr) && arr.length===7 ? arr : Array(7).fill('');
+      } catch { return Array(7).fill(''); }
+    }
+    function saveAssistArray(arr){ try { localStorage.setItem(getAssistWeekKey(), JSON.stringify(arr)); } catch(e){ console.warn('save assist failed', e); } }
+
+    /* =========================
+       המרות/בועות
+    ========================== */
+    function toNameArray(str){
+      return String(str||'').split(/[,\n]/).map(n=>n.trim()).filter(Boolean);
+    }
+    function renderPersonBubbles(names, dayLabel, timeSlotTitle){
+      return (names||[]).map(raw=>{
+        const clean = raw.trim(); const key = clean.includes(' ')? clean.replace(' ','_'): clean;
+        const className = colorMap[key] ? `person ${colorMap[key]}` : 'person';
+        const title = `${escapeHtml(clean)} - ${escapeHtml(dayLabel)}, ${escapeHtml(timeSlotTitle)}`;
+        return `<span class="${className}" title="${title}">${escapeHtml(clean)}</span>`;
+      }).join('');
+    }
+    const KNOWN_NAMES = Object.keys(colorMap).map(k=>k.includes('_')? k.replace('_',' '): k);
+    const splitToTokens = t => String(t||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+
+    function placeCaretAtEnd(el){
+      try{ el.focus(); const r=document.createRange(); r.selectNodeContents(el); r.collapse(false);
+        const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch{}
+    }
+    function appendSeparatorAndFocus(cell, sep=', '){
+      const last = cell.lastChild;
+      const need = !last || (last.nodeType===Node.TEXT_NODE && !/\s$/.test(last.textContent)) || (last.nodeType!==Node.TEXT_NODE);
+      if (need) cell.appendChild(document.createTextNode(sep));
+      placeCaretAtEnd(cell);
+    }
+    function convertAssistCellToBubbles(cell){
+      const dayIdx = parseInt(cell.dataset.dayIndex,10)||0;
+      const dayName = cell.dataset.dayName || '';
+
+      const existing = Array.from(cell.querySelectorAll('.person')).map(el=>el.textContent.trim()).filter(Boolean);
+
+      const clone = cell.cloneNode(true); clone.querySelectorAll('.person').forEach(el=>el.remove());
+      const tokens = splitToTokens(clone.innerText);
+
+      const matchedSet = new Set(existing); const leftovers = [];
+      tokens.forEach(tok=> KNOWN_NAMES.includes(tok)? matchedSet.add(tok): leftovers.push(tok));
+
+      const matched = Array.from(matchedSet);
+      cell.innerHTML = renderPersonBubbles(matched, dayName, 'ליווי 07:40') + (leftovers.length? (' '+escapeHtml(leftovers.join(', '))): '');
+
+      const arr = loadAssistArray(); arr[dayIdx] = matched.join(', '); saveAssistArray(arr);
+      placeCaretAtEnd(cell);
+    }
+	
+	function setupAssistEditors() {
+	  document.querySelectorAll('.assist-cell[contenteditable="true"]').forEach(cell => {
+		cell.addEventListener('keydown', e => {
+		  if (e.key === 'Enter') {
+			e.preventDefault(); // מונע ירידת שורה
+			
+			// שליפת השמות שהוקלדו
+			const rawText = cell.innerText;
+			const names = rawText.split(/[,\n]/).map(n => n.trim()).filter(Boolean);
+			const dayName = cell.dataset.dayName || "";
+			
+			// הפיכה לבועות צבעוניות בלי לרענן את כל הטבלה
+			cell.innerHTML = renderPersonBubbles(names, dayName, 'ליווי 07:40');
+			
+			cell.blur(); // סיום עריכה
+			
+			// עדכון ה-Textarea מאחורי הקלעים כדי שהשינוי יישמר
+			if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea();
+		  }
+		});
+		
+		// ניקוי אוטומטי כשיוצאים מהתא בלי ללחוץ אנטר
+		cell.addEventListener('blur', () => {
+			const names = cell.innerText.split(/[,\n]/).map(n => n.trim()).filter(Boolean);
+			const dayName = cell.dataset.dayName || "";
+			cell.innerHTML = renderPersonBubbles(names, dayName, 'ליווי 07:40');
+		});
+	  });
+	}
+
+    /* =========================
+       קריאת טקסט: פורמט אנכי (ימים→שעות→שמות)
+    ========================== */
+    function aggressiveClean(line){ return line.replace(/[\u0000-\u0008\u000B-\u001F\u007F-\u009F\uFEFF\u00A0]/g,'').trim(); }
+
+    function parseVerticalText(text){
+      const lines = text.split(/\r?\n|\r/);
+      const rawDayData = {}; let currentDay = null;
+
+      const timeSlotCheckMap = {};
+      EXPECTED_TIME_SLOTS.forEach(slot=> timeSlotCheckMap[slot.split('(')[0].trim()] = slot);
+
+      lines.forEach(line=>{
+        const cleaned = aggressiveClean(line); if (!cleaned) return;
+        const dayMatch = EXPECTED_DAYS.find(d=> cleaned===d || cleaned.startsWith(d));
+        if (dayMatch){ currentDay = dayMatch; rawDayData[currentDay] = []; }
+        else if (currentDay){
+          const parts = line.split(/\s{2,}|\t/).map(p=>p.trim());
+          const ts = parts[0];
+          const isTime = Object.keys(timeSlotCheckMap).some(tp=> ts && ts.startsWith(tp));
+          const isAssist = ts==='ליווי 07:40';
+          if (parts.length>0 && isTime){
+            const names = parts.slice(1).filter(Boolean).map(s=>s.trim());
+            rawDayData[currentDay].push(names.join(','));
+          } else if (isAssist){
+            // ליווי לא שייך ל-scheduleData
+          }
+        }
+      });
+
+      const daysFound = Object.keys(rawDayData);
+      if (!daysFound.length) return { error:'לא נמצאו נתונים תקינים. ודא שהטקסט מתחיל ב"יום ראשון".' };
+
+      const schedule = [];
+      for (let i=0;i<EXPECTED_TIME_SLOTS.length;i++){
+        const row = [];
+        for (let j=0;j<EXPECTED_DAYS.length;j++){
+          const day = EXPECTED_DAYS[j]; const dayShifts = rawDayData[day];
+          if (!dayShifts) return { error:`שגיאה: יום **${day}** חסר.` };
+          if (dayShifts.length !== EXPECTED_TIME_SLOTS.length) return { error:`שגיאה ביום **${day}**: נמצאו ${dayShifts.length} במקום ${EXPECTED_TIME_SLOTS.length}.` };
+          row.push(dayShifts[i]);
+        }
+        schedule.push(row);
+      }
+      return { days: EXPECTED_DAYS, data: schedule };
+    }
+
+    /* =========================
+       רנדור טבלת משמרות + סיכום וחריגות
+    ========================== */
+    function renderSchedule(parsed){
+      const rc = document.getElementById('results-container');
+      const startDate = document.getElementById('startDate').value;
+
+      if (parsed.error){ rc.innerHTML = `<p class="warning-text">❌ ${parsed.error}</p>`; return; }
+      if (!startDate){ rc.innerHTML = `<p class="warning-text">❌ אנא בחר תאריך התחלה (יום ראשון).</p>`; return; }
+
+      const datesForWeek = getDatesForWeek(startDate);
+      const { days: dayHeaders, data: scheduleData } = parsed;
+
+      const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
+      const guardsFor5Set = new Set(guardsFor5Text.split(/[,\n]/).map(n=>n.trim()).filter(Boolean));
+
+      let tableHTML = '<h3 style="text-align:center;">טבלת משמרות</h3>';
+      tableHTML += `<p class="file-format-info" style="text-align:center; color:var(--primary-blue);">הגדרות: לילות (22–06) = 2 שומרים, משמרת יום = 1. מינימום ${MIN_REQUIRED} לאדם.</p>`;
+
+      let scheduleTableHTML = '<table id="schedule-table"><thead><tr><th>שעות / יום</th>';
+      dayHeaders.forEach((day,i)=>{
+        scheduleTableHTML += `
+          <th>
+            <span class="day-header-name">${day.replace('יום ','')}</span>
+            <span class="date-text">${datesForWeek[i]}</span>
+          </th>`;
+      });
+      scheduleTableHTML += '</tr></thead><tbody>';
+
+      // שורת ליווי (עריכה חיה)
+      const assistValues = loadAssistArray();
+      scheduleTableHTML += `
+        <tr class="red-assistance-shift">
+          <td class="time-slot" title="ליווי 07:40">ליווי 07:40</td>
+          ${dayHeaders.map((day, idx)=>{
+            const bubbles = renderPersonBubbles(toNameArray(assistValues[idx]||''), day, 'ליווי 07:40');
+            return `
+              <td class="assist-cell" contenteditable="true"
+                data-day-index="${idx}" data-day-name="${escapeHtml(day)}" data-assist-type="0740"
+                title="${escapeHtml(day)} - ליווי 07:40">${bubbles}</td>`;
+          }).join('')}
+        </tr>`;
+
+      const allShifts = {};                 // ספירת הופעות (ללא ליווי)
+      const night2to6CountByName = {};      // ספירת 02–06 לאדם
+      const dailyCheck = {};                // כפילות יומית
+      const exceptions = [];
+
+      scheduleData.forEach((row, rowIdx)=>{
+        const timeFull = EXPECTED_TIME_SLOTS[rowIdx];
+        const isNight = timeFull.includes('(Night)');
+        const isNight2to6 = rowIdx===NIGHT_SHIFT_2_6_INDEX;
+        const timeDisp = timeFull.replace(' (Night)','').replace(' - ', '<br>');
+        const maxInShift = (rowIdx===NIGHT_SHIFT_2_6_INDEX || rowIdx===NIGHT_SHIFT_22_2_INDEX)? 2 : 1;
+
+        scheduleTableHTML += `<tr><td class="time-slot">${timeDisp}</td>`;
+
+        row.forEach((cell, colIdx)=>{
+          const day = dayHeaders[colIdx];
+          const names = (cell||'').split(',').map(n=>n.trim()).filter(Boolean);
+          const num = names.length;
+
+          if (!dailyCheck[day]) dailyCheck[day] = new Set();
+
+          // כפילות יומית + 8 שעות מנוחה באותו יום
+          let consecutiveViolation = false;
+          names.forEach(n=>{
+            if (dailyCheck[day].has(n)){
+              exceptions.push({ day, slot: timeDisp, name:n, msg:'כפילות: שתי משמרות באותו יום' });
+            }
+            const prevIdx = CONSECUTIVE_SHIFT_CHECK[rowIdx];
+            if (prevIdx!==undefined){
+              const prevNames = scheduleData[prevIdx][colIdx].split(',').map(x=>x.trim()).filter(Boolean);
+              if (prevNames.includes(n)) consecutiveViolation = true;
+            }
+            dailyCheck[day].add(n);
+
+            // ספירה לשבוע (ללא ליווי)
+            allShifts[n] = (allShifts[n]||0) + 1;
+
+            // ספירה לילה 02–06
+            if (isNight2to6){
+              night2to6CountByName[n] = (night2to6CountByName[n]||0) + 1;
+              if (night2to6CountByName[n] > MAX_NIGHT_2_6){
+                exceptions.push({ day:'סיכום שבועי', slot:'02:00-06:00', name:n, msg:`חריגה: ${night2to6CountByName[n]} לילות (מקסימום ${MAX_NIGHT_2_6})` });
+              }
+            }
+          });
+
+          // חסימות בין ימים:
+          if (colIdx>0 && (rowIdx===MORNING_SHIFT_6_10_INDEX || rowIdx===MORNING_SHIFT_10_14_INDEX)){
+            const prevNight = scheduleData[NIGHT_SHIFT_22_2_INDEX][colIdx-1].split(',').map(n=>n.trim()).filter(Boolean);
+            names.forEach(n=>{
+              if (prevNight.includes(n)) exceptions.push({ day, slot: timeDisp, name:n, msg:'הפרת מנוחת לילה: 22–02 אתמול → בוקר היום' });
+            });
+          }
+          if ([MORNING_SHIFT_6_10_INDEX, MORNING_SHIFT_10_14_INDEX, AFTERNOON_SHIFT_14_18_INDEX].includes(rowIdx)){
+            const nightNames = scheduleData[NIGHT_SHIFT_2_6_INDEX][colIdx].split(',').map(n=>n.trim()).filter(Boolean);
+            names.forEach(n=>{
+              if (nightNames.includes(n)) exceptions.push({ day, slot: timeDisp, name:n, msg:'הפרת מנוחה: 02–06 → לפני 18:00 באותו יום' });
+            });
+          }
+          if (rowIdx===NIGHT_SHIFT_2_6_INDEX && colIdx>0){
+            const prevNight = scheduleData[NIGHT_SHIFT_22_2_INDEX][colIdx-1].split(',').map(n=>n.trim()).filter(Boolean);
+            names.forEach(n=>{
+              if (prevNight.includes(n)) exceptions.push({ day, slot: timeDisp, name:n, msg:'אסור רצף לילות: 22–02 אתמול → 02–06 היום' });
+            });
+          }
+
+          // עיצוב תא:
+          let cellClass = ''; let warn = '';
+          if (num===0){
+            cellClass = 'needs-selection'; warn = '<span class="warning-text">בעיה! משבצת ריקה</span>';
+          } else if (consecutiveViolation){
+            exceptions.push({ day, slot: timeDisp, name:names.join(', '), msg:'פחות מ‑8 שעות מנוחה בין משמרות' });
+            cellClass = isNight? 'night-shift-ok':'ok-shift';
+          } else if (num>maxInShift){
+            cellClass = 'needs-selection'; warn = `<span class="warning-text">⚠️ עודף עובדים (${num}). נדרש: ${maxInShift}</span>`;
+          } else {
+            cellClass = isNight? 'night-shift-ok':'ok-shift';
+          }
+
+          const timeTitle = timeFull.replace(' (Night)','');
+          const formatted = names.map(raw=>{
+            const clean = raw.trim(); const key = clean.includes(' ')? clean.replace(' ','_'): clean;
+            const cls = colorMap[key] || 'person'; const title = `${escapeHtml(clean)} - ${escapeHtml(day)}, ${escapeHtml(timeTitle)}`;
+            return `<span class="person ${cls}" title="${title}">${escapeHtml(clean)}</span>`;
+          }).join('');
+
+          scheduleTableHTML += `<td data-day="${day}" data-time="${timeDisp}" class="${cellClass}" contenteditable="true" style="outline:none;">${formatted} ${warn}</td>`;
+        });
+
+        scheduleTableHTML += '</tr>';
+      });
+
+      scheduleTableHTML += '</tbody></table>';
+      lastRenderedTableHTML = scheduleTableHTML;
+
+      // חריגות
+      let exceptionsTableHTML = `
+        <div style="text-align:center; margin-top:20px;"><h3 id="exceptions-header">⚠️ ריכוז חריגות ואזהרות</h3></div>
+        <table id="exceptions-table"><thead>
+          <tr><th>יום</th><th>משמרת</th><th>עובד</th><th>פירוט החריגה</th></tr>
+        </thead><tbody>`;
+      if (!exceptions.length) exceptionsTableHTML += `<tr><td colspan="4">אין חריגות בסידור! ✅</td></tr>`;
+      else exceptions.forEach(ex=>{
+        exceptionsTableHTML += `<tr><td>${ex.day}</td><td>${ex.slot}</td><td><b>${ex.name}</b></td><td>${ex.msg}</td></tr>`;
+      });
+      exceptionsTableHTML += '</tbody></table><hr>';
+
+      // סיכום
+      let summaryTableHTML = `<h3>סיכום הופעות (ללא ליווי) — מינימום ${MIN_REQUIRED}, מקסימום ${MAX_ALLOWED}</h3>`;
+      summaryTableHTML += `
+        <table id="summary-table"><thead>
+          <tr><th>מס'</th><th>שם העובד</th><th>סך הופעות</th><th>משמרות 02–06 (מקס' ${MAX_NIGHT_2_6})</th><th>סטטוס</th></tr>
+        </thead><tbody>`;
+
+      const sorted = Object.keys(allShifts).sort((a,b)=>{
+        if (allShifts[b]!==allShifts[a]) return allShifts[b]-allShifts[a];
+        return a.localeCompare(b,'he');
+      });
+      let idx=1;
+      sorted.forEach(name=>{
+        const count = allShifts[name];
+        const nCount = night2to6CountByName[name] || 0;
+        let rowClass=''; let status='';
+
+        if (count===MAX_ALLOWED){ rowClass='shifts-5-count'; status=`✅ עמד (${MAX_ALLOWED})`; }
+        else if (count===(MAX_ALLOWED-1)){ rowClass='shifts-4-count'; status=`✅ עמד (${MAX_ALLOWED-1})`; }
+        else if (count<MIN_REQUIRED){ rowClass='low-shifts'; status=`❌ פחות מ‑${MIN_REQUIRED} (${count})`; }
+        else if (count>MAX_ALLOWED){ rowClass='not-met-condition'; status=`❌ יותר מ‑${MAX_ALLOWED} (${count})`; }
+
+        const nightCell = nCount>MAX_NIGHT_2_6 ? `<span class="night-limit-fail">❌ ${nCount}</span>` : `<span class="night-limit-ok">✅ ${nCount}</span>`;
+        if (nCount>MAX_NIGHT_2_6) rowClass += ' night-limit-fail-row';
+
+        summaryTableHTML += `
+          <tr class="${rowClass}">
+            <td style="text-align:center;">${idx++}</td>
+            <td>${name}</td>
+            <td style="text-align:center;">${count}</td>
+            <td style="text-align:center;">${nightCell}</td>
+            <td style="text-align:center;">${status}</td>
+          </tr>`;
+      });
+
+      summaryTableHTML += '</tbody></table>';
+
+      rc.innerHTML = scheduleTableHTML + '<hr>' + exceptionsTableHTML + summaryTableHTML;
+      setupAssistEditors();
+	  setupTableLiveEditing();
+    }
+
+    /* =========================
+       הורדת HTML לטבלה בלבד (ללא לוגיקה)
+    ========================== */
+    function downloadHtmlTable(){
+      const startDate = document.getElementById('startDate').value;
+      const resultsHTML = document.getElementById('results-container').innerHTML;
+      if (!startDate || !resultsHTML || resultsHTML.includes('הטעינה הראשונית')){
+        alert('בחר תאריך ובצע ניתוח לפני ההורדה.'); return;
+      }
+
+      const [y,m,d] = startDate.split('-');
+      const sun = new Date(y, m-1, d); const sat = new Date(sun); sat.setDate(sun.getDate()+6);
+      const fmt = dt => `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
+      const header = `טבלת משמרות ${fmt(sun)} - ${fmt(sat)}`;
+      const style = document.querySelector('style').textContent;
+
+      let exportTableHTML = lastRenderedTableHTML
+        .replace(/contenteditable="true"/g,'contenteditable="false"')
+        .replace(/ data-day-index="[^"]*"/g,'').replace(/ data-day-name="[^"]*"/g,'').replace(/ data-assist-type="[^"]*"/g,'');
+
+      const scripts = `
+        // === Spotlight + Name Inspector (exported) ===
+        const EXPECTED_DAYS = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','יום שבת'];
+        const EXPECTED_TIME_SLOTS = [
+          '02:00 - 06:00 (Night)',
+          '06:00 - 10:00',
+          '10:00 - 14:00',
+          '14:00 - 18:00',
+          '18:00 - 22:00',
+          '22:00 - 02:00 (Night)'
+        ];
+        let lockedName=null;
+      
+        function updateHighlights(name){
+          const c=document.getElementById('results-container'); if(!c)return;
+          if(name) c.classList.add('spotlight-active'); else c.classList.remove('spotlight-active');
+          c.querySelectorAll('.person').forEach(el=> el.textContent.trim()===name ? el.classList.add('highlight-name') : el.classList.remove('highlight-name'));
+        }
+      
+        function computeNameStats(targetName){
+          const container=document.getElementById('results-container');
+          const table=container?.querySelector('#schedule-table');
+          if(!container||!table||!targetName) return null;
+      
+          const bubbles=[...container.querySelectorAll('.person')].filter(el=> el.textContent.trim()===targetName);
+          let totalShifts=0, assistCount=0; const items=[];
+          bubbles.forEach(b=>{
+            const td=b.closest('td'); if(!td) return;
+            const isAssist=td.classList.contains('assist-cell');
+            let day=td.getAttribute('data-day')||''; let time=td.getAttribute('data-time')||'';
+            if(!day||!time){
+              const t=b.getAttribute('title')||''; const m=t.split(' - ');
+              if(m.length>=2){ const right=m.slice(1).join(' - '); const parts=right.split(',').map(s=>s.trim());
+                if(parts[0]) day=parts[0]; if(parts[1]) time=parts[1];
+              }
+            }
+            if(isAssist){ assistCount++; items.push({day, time: time||'ליווי 07:40', type:'assist'}); }
+            else { totalShifts++; items.push({day, time, type:'shift'}); }
+          });
+      
+          const dayOrder=new Map(EXPECTED_DAYS.map((d,i)=>[d,i]));
+          const timeIndex=t=>{
+            if(!t) return 999;
+            const clean=String(t).replace(/<br\\s*\\/?>(?=)/gi,' - ').trim();
+            const idx=EXPECTED_TIME_SLOTS.findIndex(s=> clean.startsWith(s.split('(')[0].trim()));
+            return idx===-1? 998: idx;
+          };
+          items.sort((a,b)=>{
+            const da=dayOrder.has(a.day)? dayOrder.get(a.day): 997;
+            const db=dayOrder.has(b.day)? dayOrder.get(b.day): 997;
+            if(da!==db) return da-db;
+            return timeIndex(a.time)-timeIndex(b.time);
+          });
+      
+          return { name: targetName, totalShifts, assistCount, items };
+        }
+      
+        function renderNameInspector(stats){
+          const box=document.getElementById('name-inspector'); if(!box) return;
+          if(!stats){ box.style.display='none'; box.setAttribute('aria-hidden','true'); return; }
+          const byId=id=>document.getElementById(id);
+          byId('niTotalShifts').textContent=String(stats.totalShifts);
+          byId('niAssistCount').textContent=String(stats.assistCount);
+          byId('niPersonName').textContent=stats.name;
+          const list=byId('niList'); list.innerHTML='';
+          if(!stats.items.length){ list.innerHTML='<div class="muted">אין הופעות לשבוע זה.</div>'; }
+          else{
+            stats.items.forEach(it=>{
+              const row=document.createElement('div');
+              row.className='item';
+              row.innerHTML =
+                '<div class="left">' +
+                  '<div><strong>' + (it.day || '') + '</strong></div>' +
+                  '<div class="muted">' + String(it.time||'').replace(/<br\\s*\\/?>(?=)/gi,' - ') + '</div>' +
+                '</div>' +
+                '<div>' + (it.type==='assist' ? '<span class="tag">ליווי</span>' : '') + '</div>';
+              list.appendChild(row);
+            });
+          }
+          box.style.display='block';
+          box.setAttribute('aria-hidden','false');
+        }
+      
+        document.addEventListener('click',e=>{
+          const p=e.target.closest('.person');
+          if(p){
+            const n=p.textContent.trim();
+            lockedName=(lockedName===n)? null: n;
+            updateHighlights(lockedName);
+            if(lockedName){ const stats=computeNameStats(lockedName); renderNameInspector(stats); }
+            else { renderNameInspector(null); }
+          } else if(!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('#name-inspector')){
+            lockedName=null; updateHighlights(lockedName); renderNameInspector(null);
+          }
+        });
+        document.getElementById('nameInspectorClose')?.addEventListener('click',()=> renderNameInspector(null));
+      
+        function autoFitTable(){
+          const c=document.getElementById('results-container'); const t=document.getElementById('schedule-table'); if(!c||!t) return;
+          c.style.transformOrigin='top right'; c.style.transform='scale(1)'; c.style.width='100%';
+          const sw=document.documentElement.clientWidth-12; const tw=t.scrollWidth;
+          if(tw>sw){ const s=sw/tw; c.style.transform='scale('+s+')'; c.style.width=(100/s)+'%'; }
+        }
+        addEventListener('load',autoFitTable); addEventListener('resize',autoFitTable);
+      `;
+
+
+      const content = `
+        <!DOCTYPE html><html lang="he" dir="rtl"><head>
+          <meta charset="UTF-8"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0"/>
+          <title>${header}</title>
+          <style>
+            ${style}
+            body{ padding:5px; text-align:center; overflow-x:auto; -webkit-text-size-adjust:100%; }
+            html,body{ width:100%; overflow-x:hidden; }
+            .spotlight-active .person:not(.highlight-name){ opacity:.45 !important; filter:grayscale(30%); transform:scale(.98); }
+            .person.highlight-name{ opacity:1 !important; filter:none !important; transform:scale(1.35) !important; box-shadow:0 10px 25px rgba(0,0,0,0.5) !important; outline:4px solid #000 !important; outline-offset:2px; z-index:9999 !important; position:relative; }
+            .assist-cell{ user-select:none; cursor:default; }
+            #results-container{ transition:all .2s ease; width:100%; display:block; }
+            #schedule-table{ margin-right:0; margin-left:auto; }
+         
+ </style>
+        </head><body>
+          <h1 class="modern-main-header" style="font-size:1.5em; padding:10px;">${header}</h1>
+          <div id="results-container">${exportTableHTML}</div>
+        
+          <!-- כרטיס מידע על שם (גם בקובץ המיוצא) -->
+          <div id="name-inspector" aria-live="polite" aria-hidden="true">
+            <div class="hdr">
+              <div class="title">פרטי שומר</div>
+              <button class="close-btn" type="button" id="nameInspectorClose">סגור</button>
+            </div>
+            <div class="kpis">
+              <div class="kpi">
+                <div class="num" id="niTotalShifts">0</div>
+                <div class="lbl">סה״כ משמרות</div>
+              </div>
+              <div class="kpi">
+                <div class="num" id="niAssistCount">0</div>
+                <div class="lbl">ליווי 07:40</div>
+              </div>
+            </div>
+            <div class="muted" id="niPersonName"></div>
+            <div class="list" id="niList"></div>
+          </div>
+        
+          <script>${scripts}<\/script>
+        </body></html>`;
+
+      const bom = '\ufeff';
+      const blob = new Blob([bom + content], { type:'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=`sidur_${startDate}.html`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    /* =========================
+       סידור אוטומטי (2 סבבים: צהובים → איזון)
+       — כולל חסימות יום מליווי ותנאי עצירה עדכני
+    ========================== */
+    function autoSchedule(){
+      const guardsFor5Text = document.getElementById('guardsFor5Shifts').value;
+      const guardsFor5Set = new Set(guardsFor5Text.split(/[,\n]/).map(n=>n.trim()).filter(Boolean));
+      const textContent = document.getElementById('dataToAnalyze').value;
+      const startDate = document.getElementById('startDate').value;
+      if (!startDate){ alert('בחר תאריך התחלה (יום ראשון) לפני הסידור.'); return; }
+
+      const parsed = parseVerticalText(textContent);
+      if (parsed.error){
+        const rc=document.getElementById('results-container'); rc.innerHTML='';
+        const p=document.createElement('p'); p.id='initial-message'; p.textContent='הטעינה הראשונית תפעיל את הניתוח אוטומטית.'; rc.appendChild(p);
+        return;
+      }
+
+      const allEmployees = Object.keys(colorMap).map(k=>k.includes('_')? k.replace('_',' '): k);
+
+      let employeeShiftsCount = {};
+      let nightShift2to6Count = {};
+      let newScheduleData = parsed.data.map(row=> row.map(()=>[]));
+      let nightToMorningCheck = parsed.days.map(()=> new Set());
+      let dailyOccupancy = parsed.days.map(()=> new Set());
+      let daily8HourBreakRequired = parsed.days.map(()=> new Set());
+      let availabilityMap = {};
+
+      for (let iteration=0; iteration<MAX_ITERATIONS; iteration++){
+        // איפוס ספירות
+        allEmployees.forEach(n=>{ employeeShiftsCount[n]=0; nightShift2to6Count[n]=0; });
+
+        nightToMorningCheck = parsed.days.map(()=> new Set());
+        dailyOccupancy = parsed.days.map(()=> new Set());
+        daily8HourBreakRequired = parsed.days.map(()=> new Set());
+        availabilityMap = {};
+
+        // ליווי 07:40 – תופס את היום
+        try {
+          const assist = loadAssistArray();
+          assist.forEach((csv, dayIdx)=> toNameArray(csv).forEach(n=> n && dailyOccupancy[dayIdx].add(n)));
+        } catch(e){ console.warn('assist preload failed', e); }
+
+        let night22_02_block = parsed.days.map(()=> new Set());
+        let night02_06_block = parsed.days.map(()=> new Set());
+        const shiftsToFill = [];
+
+        // קריאת זמינות + שיבוץ ידני תקין (רק אם הכמות מדויקת)
+        parsed.data.forEach((row, shiftIdx)=>{
+          const required = (shiftIdx===NIGHT_SHIFT_2_6_INDEX || shiftIdx===NIGHT_SHIFT_22_2_INDEX)? 2 : 1;
+
+          row.forEach((cell, dayIdx)=>{
+            const available = cell.split(',').map(s=>s.trim()).filter(Boolean);
+            if (!availabilityMap[dayIdx]) availabilityMap[dayIdx]={};
+            availabilityMap[dayIdx][shiftIdx] = new Set(available);
+
+            let namesInSlot = [];
+            if (iteration===0){
+              namesInSlot = (available.length===required && available.length>0) ? available : [];
+              newScheduleData[shiftIdx][dayIdx] = namesInSlot;
+            } else {
+              namesInSlot = newScheduleData[shiftIdx][dayIdx];
+            }
+
+            namesInSlot.forEach(name=>{
+              if (!allEmployees.includes(name)) return;
+              employeeShiftsCount[name] = (employeeShiftsCount[name]||0)+1;
+              if (shiftIdx===NIGHT_SHIFT_2_6_INDEX) nightShift2to6Count[name] = (nightShift2to6Count[name]||0)+1;
+              dailyOccupancy[dayIdx].add(name);
+
+              if (shiftIdx===NIGHT_SHIFT_22_2_INDEX){
+                nightToMorningCheck[dayIdx].add(name);
+                if (dayIdx+1<parsed.days.length) night22_02_block[dayIdx+1].add(name);
+              }
+              if (shiftIdx===NIGHT_SHIFT_2_6_INDEX){
+                night02_06_block[dayIdx].add(name);
+              }
+              const next = shiftIdx+1;
+              if (CONSECUTIVE_SHIFT_CHECK[next]===shiftIdx) daily8HourBreakRequired[dayIdx].add(name);
+            });
+
+            if (newScheduleData[shiftIdx][dayIdx].length < required){
+              shiftsToFill.push({ dayIndex:dayIdx, shiftIndex:shiftIdx, requiredCount: required - newScheduleData[shiftIdx][dayIdx].length });
+            }
+          });
+        });
+
+        // סדר כרונולוגי
+        shiftsToFill.sort((a,b)=> a.dayIndex!==b.dayIndex? a.dayIndex-b.dayIndex : a.shiftIndex-b.shiftIndex);
+
+        function scoreEmployee(name, count, dayIdx, shiftIdx, equalizeMode=false){
+          // חסימות קשיחות
+          if (shiftIdx===NIGHT_SHIFT_2_6_INDEX && (nightShift2to6Count[name]||0)>=MAX_NIGHT_2_6) return -3_000_000;
+          if (dailyOccupancy[dayIdx].has(name) || daily8HourBreakRequired[dayIdx].has(name)) return -1_000_000;
+          if (night22_02_block[dayIdx].has(name) && (shiftIdx===MORNING_SHIFT_6_10_INDEX || shiftIdx===MORNING_SHIFT_10_14_INDEX)) return -2_000_000;
+          if (night22_02_block[dayIdx].has(name) && shiftIdx===NIGHT_SHIFT_2_6_INDEX) return -2_000_000; // רצף לילות
+          if (night02_06_block[dayIdx].has(name) && (shiftIdx<=AFTERNOON_SHIFT_14_18_INDEX)) return -2_000_000;
+          if ((employeeShiftsCount[name]||0) >= MAX_ALLOWED) return -500_000;
+
+          // ניקוד: סבב ראשון דוחף אל היעד האישי; סבב שני מאזן "שווה בשווה"
+          let score = 0; const target = guardsFor5Set.has(name)? 5 : MIN_REQUIRED;
+          if (!equalizeMode && count<target) score += 100_000 * (target - count);
+          score += (MAX_ALLOWED - count)*1_000;
+          return score;
+        }
+
+        function fillShift(shift, onlyGuardsFor5){
+          const { dayIndex, shiftIndex } = shift;
+          const maxInShift = (shiftIndex===NIGHT_SHIFT_2_6_INDEX || shiftIndex===NIGHT_SHIFT_22_2_INDEX)? 2 : 1;
+          if (newScheduleData[shiftIndex][dayIndex].length >= maxInShift) return;
+
+          const available = Array.from(availabilityMap[dayIndex][shiftIndex]);
+          const already = new Set(newScheduleData[shiftIndex][dayIndex]);
+          let candidates = available.filter(n=> !already.has(n));
+          if (onlyGuardsFor5) candidates = candidates.filter(n=> guardsFor5Set.has(n));
+
+          let needed = maxInShift - newScheduleData[shiftIndex][dayIndex].length;
+          while (needed>0 && candidates.length>0){
+            const scored = candidates.map(n=> ({
+              name:n, score: scoreEmployee(n, employeeShiftsCount[n]||0, dayIndex, shiftIndex, !onlyGuardsFor5)
+            })).sort((a,b)=> b.score - a.score);
+
+            const best = scored[0];
+            if (best && best.score>-90_000){
+              const n = best.name;
+              newScheduleData[shiftIndex][dayIndex].push(n);
+              employeeShiftsCount[n] = (employeeShiftsCount[n]||0)+1;
+              dailyOccupancy[dayIndex].add(n);
+
+              if (shiftIndex===NIGHT_SHIFT_2_6_INDEX){
+                nightShift2to6Count[n] = (nightShift2to6Count[n]||0)+1;
+                night02_06_block[dayIndex].add(n);
+              }
+              if (shiftIndex===NIGHT_SHIFT_22_2_INDEX){
+                nightToMorningCheck[dayIndex].add(n);
+                if (dayIndex+1<parsed.days.length) night22_02_block[dayIndex+1].add(n);
+              }
+              const next = shiftIndex+1;
+              if (CONSECUTIVE_SHIFT_CHECK[next]===shiftIndex) daily8HourBreakRequired[dayIndex].add(n);
+
+              candidates = candidates.filter(x=> x!==n);
+              needed--;
+            } else break;
+          }
+        }
+
+        // סבב 1: רק צהובים
+        shiftsToFill.forEach(s=> fillShift(s, true));
+        // סבב 2: כל השאר (איזון)
+        shiftsToFill.forEach(s=> fillShift(s, false));
+
+        // תנאי עצירה עדכני: אין חוסרים וכולם ≥ מינימום
+        const belowMin = allEmployees.filter(n=> (employeeShiftsCount[n]||0) < MIN_REQUIRED);
+        const anyUnfilled = newScheduleData.some((row, idx)=>{
+          const req = (idx===NIGHT_SHIFT_2_6_INDEX || idx===NIGHT_SHIFT_22_2_INDEX)? 2 : 1;
+          return row.some(arr=> arr.length<req);
+        });
+        if (!anyUnfilled && !belowMin.length) break;
+        if (iteration===MAX_ITERATIONS-1){ console.warn('MAX ITERATIONS REACHED. CHECKING FINAL RESULTS.'); break; }
+      }
+
+      // כתיבת התוצאה לטקסט + רנדור
+      let out = '';
+      parsed.days.forEach((day, dayIdx)=>{
+        out += `${day}\n`;
+        newScheduleData.forEach((row, shiftIdx)=>{
+          const time = EXPECTED_TIME_SLOTS[shiftIdx].split('(')[0].trim();
+          out += `${time}\t${row[dayIdx].join('\t')}\n`;
+        });
+        out += '\n';
+      });
+      document.getElementById('dataToAnalyze').value = out.trim();
+      renderSchedule(parseVerticalText(out.trim()));
+
+      // הודעת מצב
+      const finalCounts = allEmployees.map(n=> ({ name:n, count:(document.getElementById('dataToAnalyze').value.match(new RegExp(`\\b${n}\\b`,'g'))||[]).length }));
+      const below = finalCounts.filter(e=> e.count<MIN_REQUIRED);
+      const msg = document.getElementById('link-message');
+      if (!below.length){
+        msg.querySelector('p').textContent = `✅ סידור אוטומטי הסתיים. כולם ≥ ${MIN_REQUIRED}.`;
+        msg.style.backgroundColor = '#4CAF50';
+      } else {
+        msg.querySelector('p').textContent = `⚠️ ${below.length} עובדים מתחת למינימום ${MIN_REQUIRED}: ` + below.map(e=>`${e.name} (${e.count})`).join(', ');
+        msg.style.backgroundColor = '#ff9800';
+      }
+      msg.style.display='block'; setTimeout(()=> msg.style.display='none', 8000);
+    }
+
+    /* =========================
+       הורדת CSV (טאבים) – sep=\t + BOM
+    ========================== */
+    function downloadCsvFile(){
+      const txt = document.getElementById('dataToAnalyze').value;
+      const start = document.getElementById('startDate').value;
+      const parsed = parseVerticalText(txt);
+      if (parsed.error || !txt.trim()){ alert('❌ אין נתונים תקינים. נתח/סדר אוטומטי תחילה.'); return; }
+
+      const { days: headers, data } = parsed;
+      const dates = getDatesForWeek(start);
+
+      let csv = 'sep=\t\n' + ['שעות / יום', ...headers.map((d,i)=>`${d} (${dates[i]})`)].join('\t') + '\n';
+      data.forEach((row, idx)=>{
+        const time = EXPECTED_TIME_SLOTS[idx].split('(')[0].trim();
+        const cells = row.map(cell=> cell.split(',').map(n=>n.trim()).filter(Boolean).join(', '));
+        csv += [time, ...cells].join('\t') + '\n';
+      });
+
+      const bom = '\ufeff';
+      const blob = new Blob([bom + csv], { type:'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=`schedule_table_analyzed_${start}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+
+      const msg=document.getElementById('link-message');
+      msg.querySelector('p').textContent='✅ קובץ CSV הורד בהצלחה!'; msg.style.backgroundColor='#546E7A';
+      msg.style.display='block'; setTimeout(()=> msg.style.display='none', 3000);
+    }
+
+    /* =========================
+       משיכת נתונים מ‑Web App (Apps Script)
+       — ממלא רק את טבלת הקלט (הגריד)
+    ========================== */
+    async function fetchFromGoogleSheet(){
+      const url = document.getElementById('googleSheetUrl').value;
+      const statusEl = document.getElementById('fetch-status');
+      const dataTextArea = document.getElementById('dataToAnalyze');
+
+      if (!url || !url.startsWith('https://script.google.com/macros/s/')){
+        statusEl.textContent='❌ כתובת Web App לא תקינה.'; statusEl.style.color='red'; statusEl.style.display='block'; return;
+      }
+      localStorage.setItem('googleSheetUrl', url);
+
+      statusEl.textContent='טוען נתונים... 🔄'; statusEl.style.color='var(--primary-blue)'; statusEl.style.display='block';
+      document.getElementById('fetchFromSheetButton').disabled = true;
+
+      try {
+        const resp = await fetch(`${url}?action=getData&t=${Date.now()}`);
+        if (!resp.ok) throw new Error(`שגיאת רשת (${resp.status})`);
+        const data = await resp.text();
+        if (!data.trim()) throw new Error('טקסט ריק מהשרת');
+
+		// 1. מעדכן את הטקסט ואת הסטטוס
+        dataTextArea.value = data;
+        statusEl.textContent = '✅ נטען! ממלא טבלה...'; 
+        statusEl.style.color = 'green';
+
+        // 2. פקודה חשובה: ממלא את הטבלה (זה מה שמאריך את הדף)
+        if (window.ExcelGrid?.loadFromTextarea) ExcelGrid.loadFromTextarea();
+
+        // 3. מחכה שהדף יסיים להיפתח (300 מילי-שניות) ואז גולל ומנצנץ
+        setTimeout(() => {
+            const robotBtn = document.getElementById('autoScheduleButton');
+            if (robotBtn) {
+                // גלילה חלקה שתביא אותו בדיוק למרכז המסך
+                robotBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // הפעלת הניצנוץ (Sparkle)
+                robotBtn.classList.add('highlight-sparkle');
+                
+                // הסרת הניצנוץ אחרי 2.4 שניות
+                setTimeout(() => {
+                    robotBtn.classList.remove('highlight-sparkle');
+                }, 2400);
+            }
+        }, 300);
+		
+        if (window.ExcelGrid?.loadFromTextarea) ExcelGrid.loadFromTextarea();
+        else console.warn('ExcelGrid.loadFromTextarea() לא נמצא');
+
+        const rc = document.getElementById('results-container');
+        rc.innerHTML = '<p style="text-align:center; font-weight:600; color: var(--primary-blue);">✅ הנתונים נטענו לטבלת הקלט. עכשיו לחץ "סדר אוטומטי ↻".</p>';
+        document.getElementById('excel-input-card')?.scrollIntoView({ behavior:'smooth', block:'center' });
+
+        setTimeout(()=> statusEl.style.display='none', 5000);
+      } catch (err){
+        statusEl.textContent = `❌ שגיאה: ${err.message}. בדוק הרשאות ("Execute as: Me", "Anyone").`;
+        statusEl.style.color='red';
+      } finally {
+        document.getElementById('fetchFromSheetButton').disabled = false;
+      }
+    }
+
+    /* =========================
+       בחירת “צהובים” ל‑5 משמרות
+    ========================== */
+	function generateGuardsButtons() {
+	  const c = document.getElementById('guardButtonsContainer');
+	  if (!c) return;
+	  c.innerHTML = '';
+
+	  // השמות שצריכים להיות בצד שמאל (סוף הרשימה בפריסה רוחבית)
+	  const leftSideNames = ['אמיר חורי', 'יפתח', 'חורחה', 'חגי'];
+	  
+	  const allNames = Object.keys(colorMap)
+		.map(k => k.includes('_') ? k.replace('_', ' ') : k)
+		.sort();
+
+	  // מפרידים בין ה"שמאליים" לכל השאר
+	  const others = allNames.filter(n => !leftSideNames.some(ln => n.includes(ln)));
+	  const vips = allNames.filter(n => leftSideNames.some(ln => n.includes(ln)));
+
+	  // מחברים אותם כך שה-VIPs יהיו בסוף (מה שיוצר את הטורים השמאליים)
+	  const finalOrder = [...others, ...vips];
+
+	  finalOrder.forEach(name => {
+		const btn = document.createElement('button');
+		btn.textContent = name;
+		btn.className = 'guard-btn';
+		btn.type = 'button';
+		btn.onclick = function() {
+		  this.classList.toggle('active');
+		  updateGuardsTextarea();
+		};
+		c.appendChild(btn);
+	  });
+	}
+	
+    function updateGuardsTextarea(){
+      const act = document.querySelectorAll('.guard-btn.active');
+      document.getElementById('guardsFor5Shifts').value = Array.from(act).map(b=>b.textContent).join(', ');
+    }
+
+    /* =========================
+       Spotlight (הבלטת שם)
+    ========================== */
+    let lockedName = null;
+    function updateHighlights(name){
+      const c=document.getElementById('results-container'); if (!c) return;
+      if (name) c.classList.add('spotlight-active'); else c.classList.remove('spotlight-active');
+      c.querySelectorAll('.person').forEach(el=> el.textContent.trim()===name ? el.classList.add('highlight-name') : el.classList.remove('highlight-name'));
+    }
+    document.addEventListener('click', e=>{
+      const p=e.target.closest('.person');
+      if (p){
+        const n=p.textContent.trim();
+        lockedName = (lockedName===n)? null: n;
+        updateHighlights(lockedName);
+    
+        // חדש: פתח/עדכן כרטיס מידע
+        if (lockedName){
+          const stats = computeNameStats(lockedName);
+          renderNameInspector(stats);
+        } else {
+          renderNameInspector(null);
+        }
+      }
+      else if (!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('#name-inspector')){
+        lockedName=null;
+        updateHighlights(lockedName);
+        renderNameInspector(null);
+      }
+    });
+    document.addEventListener('mouseover', e=>{
+      const p=e.target.closest('.person');
+      if (p && !lockedName && window.matchMedia('(pointer: fine)').matches) updateHighlights(p.textContent.trim());
+    });
+    document.addEventListener('mouseout', ()=>{
+      if (!lockedName && window.matchMedia('(pointer: fine)').matches) updateHighlights(null);
+    });
+
+    
+
+    /* =========================
+     Name Inspector (כרטיס מידע על שם)
+    ========================== */
+    function computeNameStats(targetName){
+      const container = document.getElementById('results-container');
+      const table = container?.querySelector('#schedule-table');
+      if (!container || !table || !targetName) return null;
+    
+      // חיפוש כל הבועות עם אותו שם
+      const bubbles = Array.from(container.querySelectorAll('.person'))
+        .filter(el => el.textContent.trim() === targetName);
+    
+      let totalShifts = 0;      // סה"כ משמרות (ללא ליווי)
+      let assistCount = 0;      // ליווי 07:40
+      const items = [];         // פירוט {day, time, type}
+    
+      bubbles.forEach(b => {
+        const td = b.closest('td');
+        if (!td) return;
+    
+        // האם זה תא ליווי?
+        const isAssist = td.classList.contains('assist-cell');
+    
+        // רמזי יום/זמן:
+        // 1) בתאי המשמרות הרגילים: data-day + data-time על ה-TD
+        // 2) בתאי ליווי: אם חסר, ניקח מה-title של הבועה ("שם - יום, זמן/ליווי")
+        let day = td.getAttribute('data-day') || '';
+        let time = td.getAttribute('data-time') || '';
+    
+        if (!day || !time) {
+          const t = b.getAttribute('title') || '';
+          const m = t.split(' - ');
+          if (m.length >= 2) {
+            const right = m.slice(1).join(' - ');
+            const parts = right.split(',').map(s => s.trim());
+            if (parts[0]) day = parts[0];
+            if (parts[1]) time = parts[1];
+          }
+        }
+    
+        if (isAssist) {
+          assistCount++;
+          items.push({ day, time: time || 'ליווי 07:40', type: 'assist' });
+        } else {
+          totalShifts++;
+          items.push({ day, time, type: 'shift' });
+        }
+      });
+    
+      // מיון כרונולוגי: לפי EXPECTED_DAYS ואז לפי EXPECTED_TIME_SLOTS
+      const dayOrder = new Map(EXPECTED_DAYS.map((d, i) => [d, i]));
+      function timeIndex(t) {
+        if (!t) return 999;
+        const clean = String(t).replace(/<br\s*\/?>/gi, ' - ').trim();
+        const found = EXPECTED_TIME_SLOTS.findIndex(s => clean.startsWith(s.split('(')[0].trim()));
+        return found === -1 ? 998 : found;
+    }
+      items.sort((a, b) => {
+        const da = dayOrder.has(a.day) ? dayOrder.get(a.day) : 997;
+        const db = dayOrder.has(b.day) ? dayOrder.get(b.day) : 997;
+        if (da !== db) return da - db;
+        return timeIndex(a.time) - timeIndex(b.time);
+      });
+    
+      return { name: targetName, totalShifts, assistCount, items };
+    }
+    
+    function renderNameInspector(stats){
+      const box = document.getElementById('name-inspector');
+      if (!box) return;
+      if (!stats) { box.style.display = 'none'; box.setAttribute('aria-hidden','true'); return; }
+    
+      document.getElementById('niTotalShifts').textContent = String(stats.totalShifts);
+      document.getElementById('niAssistCount').textContent = String(stats.assistCount);
+      document.getElementById('niPersonName').textContent = stats.name;
+    
+      const list = document.getElementById('niList');
+      list.innerHTML = '';
+      if (!stats.items.length) {
+        list.innerHTML = '<div class="muted">אין הופעות לשבוע זה.</div>';
+      } else {
+        stats.items.forEach(it => {
+          const row = document.createElement('div');
+          row.className = 'item';
+          row.innerHTML = `
+            <div class="left">
+              <div><strong>${it.day || ''}</strong></div>
+              <div class="muted">${(it.time || '').replace(/<br>/g,' - ')}</div>
+            </div>
+            <div>
+              ${it.type === 'assist' ? '<span class="tag">ליווי</span>' : ''}
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      }
+    
+      box.style.display = 'block';
+      box.setAttribute('aria-hidden','false');
+    }
+    
+    // כפתור סגירה + סגירה בלחיצה מחוץ לשמות/כרטיס
+    document.getElementById('nameInspectorClose')?.addEventListener('click', () => renderNameInspector(null));
+    document.addEventListener('click', (e) => {
+      const isPerson = !!e.target.closest('.person');
+      const isInsideInspector = !!e.target.closest('#name-inspector');
+      const isUIControl = !!(e.target.closest('button') || e.target.closest('input') || e.target.closest('a'));
+      if (!isPerson && !isInsideInspector && !isUIControl) {
+        renderNameInspector(null);
+      }
+    });
+
+    /* =========================
+       Excel-like Grid (IIFE)
+    ========================== */
+    (function(){
+      const GRID_ID='excel-grid', TXT_ID='dataToAnalyze';
+      let matrix = [];
+
+      const dayFull = EXPECTED_DAYS.slice();
+      const dayShort = dayFull.map(d=> d.replace('יום ',''));
+      const timeLabels = EXPECTED_TIME_SLOTS.map(s=> s.split('(')[0].trim());
+
+      const el = id => document.getElementById(id);
+      const buildEmpty = ()=> matrix = timeLabels.map(()=> dayFull.map(()=> ''));
+      const esc = s => String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+      const normalize = s => {
+        const raw = String(s||'').replace(/\u00A0/g,' ').trim();
+        return raw.split(/[\n,]+/).map(x=>x.trim()).filter(Boolean).join(', ');
+      };
+
+      function render(){
+        const tbl = el(GRID_ID); if (!tbl) return;
+        let thead = '<thead><tr><th>שעות / יום</th>'; dayShort.forEach(d=> thead+=`<th>${d}</th>`); thead+='</tr></thead>';
+        let tbody = '<tbody>';
+        timeLabels.forEach((t,r)=>{
+          tbody += `<tr><td>${t}</td>`;
+          dayFull.forEach((_,c)=> tbody += `<td class="cell" contenteditable="true" data-r="${r}" data-c="${c}">${esc(matrix[r][c]||'')}</td>`);
+          tbody += '</tr>';
+        });
+        tbody += '</tbody>'; tbl.innerHTML = thead + tbody;
+      }
+
+      const pull = ()=> document.querySelectorAll(`#${GRID_ID} td.cell`).forEach(td=> matrix[td.dataset.r][td.dataset.c] = normalize(td.innerText));
+      const parseTableLike = txt => txt.replace(/\r/g,'').split('\n').map(line=>{
+        const useTab = line.split('\t').length >= line.split(',').length;
+        return (useTab? line.split('\t'): line.split(',')).map(x=>x.trim());
+      });
+
+      function handlePaste(e){
+        const cell = e.target.closest(`#${GRID_ID} td.cell`); if (!cell) return;
+        const text = e.clipboardData?.getData('text/plain'); if (!text) return;
+        e.preventDefault();
+        const rows = parseTableLike(text); const r0=Number(cell.dataset.r), c0=Number(cell.dataset.c);
+        rows.forEach((arr,r)=> arr.forEach((val,c)=> { const R=r0+r, C=c0+c; if (R<matrix.length && C<matrix[0].length) matrix[R][C] = normalize(val); }));
+        render();
+      }
+
+      function loadFromTextarea(){
+        const txt = el(TXT_ID).value.trim();
+        const parsed = parseVerticalText(txt);
+        if (!parsed.error){
+          buildEmpty(); parsed.data.forEach((row,r)=> row.forEach((cell,c)=> matrix[r][c] = normalize(cell))); render(); return;
+        }
+        const rows = parseTableLike(txt).filter(r=> r.some(x=>x && x.length));
+        if (!rows.length){ alert('שגיאה בטעינה: הטקסט ריק/לא מזוהה'); return; }
+        buildEmpty();
+
+        const header = rows[0].map(x=>(x||'').trim());
+        const hasDayHeader = header.some(h=> EXPECTED_DAYS.some(d=> h.includes(d.replace('יום ','')) || h.includes(d)));
+        const startRow = hasDayHeader? 1: 0;
+
+        for (let r=0; r<timeLabels.length && (startRow+r)<rows.length; r++){
+          const line = rows[startRow+r]; if (!line) continue;
+          const col0 = (line[0]||'').trim(); const haveTimeInFirstCol = col0 && timeLabels[r].startsWith(col0);
+          const startCol = haveTimeInFirstCol? 1: 0;
+          for (let c=0; c<dayFull.length && (startCol+c)<line.length; c++){
+            matrix[r][c] = normalize(line[startCol+c] || '');
+          }
+        }
+        render();
+      }
+
+      function applyToTextarea(){
+        pull();
+        let out=''; dayFull.forEach((day,i)=>{
+          out += day+'\n';
+          timeLabels.forEach((t,r)=> out += `${t}\t${matrix[r][i]}\n`);
+          out += '\n';
+        });
+        el(TXT_ID).value = out.trim();
+      }
+
+      function clearGrid(){ buildEmpty(); render(); }
+      function init(){
+        buildEmpty(); render();
+        el('excel-grid-wrapper').addEventListener('paste', handlePaste);
+        el('btnExcelLoadFromText').onclick = loadFromTextarea;
+        el('btnExcelApplyToText').onclick = applyToTextarea;
+        el('btnExcelClear').onclick = clearGrid;
+        el('btnExcelPasteHelp').onclick = ()=>{ const box=el('excelPasteHelp'); box.hidden=!box.hidden; };
+      }
+      window.ExcelGrid = { init, applyToTextarea, loadFromTextarea, clear: clearGrid };
+    })();
+
+    /* =========================
+       אירועי UI
+    ========================== */
+    document.getElementById('analyzeButton').addEventListener('click', ()=>{
+      if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea();
+      const txt = document.getElementById('dataToAnalyze')?.value || '';
+      renderSchedule(parseVerticalText(txt));
+    });
+    document.getElementById('generateLinkButton')?.addEventListener('click', ()=>{
+      if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea();
+      downloadHtmlTable();
+    });
+    document.getElementById('autoScheduleButton').addEventListener('click', ()=>{
+      if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea();
+      autoSchedule();
+    });
+    document.getElementById('fetchFromSheetButton').addEventListener('click', fetchFromGoogleSheet);
+    document.getElementById('quickFetchButton').addEventListener('click', fetchFromGoogleSheet);
+    document.getElementById('btnExcelAuto')?.addEventListener('click', ()=>{
+      if (!window.ExcelGrid?.applyToTextarea){ alert('ExcelGrid.applyToTextarea() לא נמצא.'); return; }
+      ExcelGrid.applyToTextarea(); autoSchedule();
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initializeData();
+      generateGuardsButtons();
+      ExcelGrid.init();
+      // אין ניתוח אוטומטי: המשתמש ילחץ "משוך נתונים" / "נתח נתונים" / "סדר אוטומטי".
+    });
+	
+	function setupTableLiveEditing() {
+	  // מוצא את כל התאים בטבלה שניתנים לעריכה
+	  const allCells = document.querySelectorAll('#schedule-table td[contenteditable="true"]');
+	  
+	  allCells.forEach(cell => {
+		cell.addEventListener('keydown', e => {
+		  // אם לחצת על אנטר
+		  if (e.key === 'Enter') {
+			e.preventDefault(); // מונע מהסמן לרדת שורה בתוך התא
+			
+			// 1. קורא את השמות שהקלדת (מפריד לפי פסיק או אנטר)
+			const rawText = cell.innerText;
+			const names = rawText.split(/[,\n]/).map(n => n.trim()).filter(Boolean);
+			
+			// 2. שואב מידע על היום והשעה מהתא (כדי שהבועה תדע מה היא)
+			const dayLabel = cell.dataset.day || cell.dataset.dayName || "";
+			const isAssist = cell.classList.contains('assist-cell');
+			const timeLabel = isAssist ? 'ליווי 07:40' : (cell.dataset.time || "").replace('<br>', ' ');
+			
+			// 3. מחליף את הטקסט הגולמי בבועות צבעוניות מעוצבות
+			cell.innerHTML = renderPersonBubbles(names, dayLabel, timeLabel);
+			
+			// 4. מוציא את הפוקוס מהתא (Blur) כדי "לנעול" את השינוי
+			cell.blur();
+			
+			// 5. מעדכן את ה-Textarea המוסתר כדי שהשינוי יישמר אם תוריד קובץ
+			if (window.ExcelGrid?.applyToTextarea) ExcelGrid.applyToTextarea();
+		  }
+		});
+	  });
+	}
+  </script>
+</body>
+</html>
